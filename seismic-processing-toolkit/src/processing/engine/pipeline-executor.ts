@@ -1,6 +1,6 @@
 import type { TraceBlock } from "../../core/model/trace";
 import type { ProcessingContext } from "../api/processor";
-import { ProcessorRegistry } from "./processor-registry";
+import type { ProcessorRegistry } from "./processor-registry";
 import type { ProcessingGraph } from "./processing-graph";
 /** Executes enabled linear graph nodes against a bounded block; DAG fan-in is reserved for future processors. */
 export class PipelineExecutor {

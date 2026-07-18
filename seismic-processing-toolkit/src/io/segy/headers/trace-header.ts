@@ -4,11 +4,11 @@ import { TraceHeaderFieldsById, type TraceHeaderFieldDescriptor } from "./trace-
 import { HeaderScalars } from "./header-scalars";
 
 /** Applies the SEG-Y scalar convention without mutating the raw header value. */
-export const applySegyScalar = HeaderScalars.apply;
+export const applySegyScalar = (raw: number, scalar: number): number => HeaderScalars.apply(raw, scalar);
 
 /** Standard 240-byte header wrapper; raw bytes survive edits and writer round trips. */
 export class TraceHeader {
-  public readonly rawBytes: Uint8Array;
+  public readonly rawBytes: Uint8Array<ArrayBuffer>;
   private readonly cursor: BinaryCursor;
 
   public constructor(raw: ArrayBuffer, public readonly littleEndian: boolean) {

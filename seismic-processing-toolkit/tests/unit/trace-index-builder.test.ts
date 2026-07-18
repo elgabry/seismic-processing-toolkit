@@ -27,6 +27,7 @@ class VirtualSegySource implements RandomAccessSource {
       }
     }
     this.afterRead?.();
+    await Promise.resolve();
     return buffer;
   }
 }

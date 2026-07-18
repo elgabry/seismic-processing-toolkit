@@ -19,6 +19,7 @@ export class GainProcessor implements SeismicProcessor<GainParameters> {
       else for (let index = 0; index < trace.length; index += 1) { const time = index * dt; const factor = parameters.mode === "constant" ? parameters.factor ?? 1 : parameters.mode === "time-power" ? Math.pow(Math.max(time, dt), parameters.exponent ?? 1) : parameters.mode === "exponential" ? Math.exp((parameters.factor ?? 0) * time) : Math.pow(Math.max(time, dt), parameters.exponent ?? 1); trace[index] = (trace[index] ?? 0) * factor; }
       context.reportProgress(row + 1, block.traceIds.length);
     }
+    await Promise.resolve();
     return cloneBlock(block, output);
   }
   private agc(trace: Float32Array, window: number, mode: "rms" | "mean-absolute"): void { const prefix = new Float64Array(trace.length + 1); for (let index = 0; index < trace.length; index += 1) prefix[index + 1] = (prefix[index] ?? 0) + (mode === "rms" ? (trace[index] ?? 0) ** 2 : Math.abs(trace[index] ?? 0)); const half = Math.floor(window / 2); for (let index = 0; index < trace.length; index += 1) { const start = Math.max(0, index - half); const end = Math.min(trace.length, index + half + 1); const value = ((prefix[end] ?? 0) - (prefix[start] ?? 0)) / Math.max(1, end - start); const scale = mode === "rms" ? Math.sqrt(value) : value; trace[index] = scale > Number.EPSILON ? (trace[index] ?? 0) / scale : 0; } }
