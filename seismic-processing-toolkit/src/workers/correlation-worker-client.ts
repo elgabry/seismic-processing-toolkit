@@ -22,7 +22,7 @@ export class CorrelationWorkerClient {
     return new Promise<TraceBlock>((resolve, reject) => {
       this.pending.set(internalJobId, {
         resolve: (result) => { signal?.removeEventListener("abort", onAbort); this.externalToInternalJobIds.delete(jobId); resolve(result); },
-        reject: (reason) => { signal?.removeEventListener("abort", onAbort); this.externalToInternalJobIds.delete(jobId); reject(reason); }
+        reject: (reason) => { signal?.removeEventListener("abort", onAbort); this.externalToInternalJobIds.delete(jobId); reject(reason instanceof Error ? reason : new Error(String(reason))); }
       });
       this.worker.postMessage({ type: "correlate", jobId: internalJobId, block } satisfies WorkerRequest, [block.traceIds.buffer, block.sampleOffsets.buffer, block.samples.buffer]);
     });

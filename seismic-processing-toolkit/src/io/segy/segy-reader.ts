@@ -65,7 +65,8 @@ export class SegyReader {
     const codec = codecs.get(candidate.header.values.sampleFormatCode);
     const indexed = await SegyTraceIndexBuilder.build(source, codec, {
       dataStartOffset, nominalSamplesPerTrace: candidate.header.values.samplesPerTrace, nominalSampleIntervalMicroseconds: candidate.header.values.sampleIntervalMicroseconds,
-      littleEndian: candidate.littleEndian, revision, signal: options.signal,
+      littleEndian: candidate.littleEndian, revision,
+      ...(options.signal === undefined ? {} : { signal: options.signal }),
       onProgress: (progress) => options.onProgress?.(progress)
     });
     diagnostics.push(...indexed.diagnostics);

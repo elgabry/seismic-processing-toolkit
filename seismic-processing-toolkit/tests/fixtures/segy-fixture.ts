@@ -31,5 +31,5 @@ export class MemorySource implements RandomAccessSource {
   public readonly requests: { offset: number; length: number }[] = [];
   public readonly size: number;
   public constructor(public readonly bytes: ArrayBuffer, public readonly name = "fixture.segy") { this.size = bytes.byteLength; }
-  public async read(offset: number, length: number, signal?: AbortSignal): Promise<ArrayBuffer> { if (signal?.aborted) throw signal.reason ?? new DOMException("Aborted", "AbortError"); this.requests.push({ offset, length }); if (offset < 0 || length < 0 || offset + length > this.size) throw new RangeError("out of bounds"); return this.bytes.slice(offset, offset + length); }
+  public async read(offset: number, length: number, signal?: AbortSignal): Promise<ArrayBuffer> { if (signal?.aborted) throw signal.reason ?? new DOMException("Aborted", "AbortError"); this.requests.push({ offset, length }); if (offset < 0 || length < 0 || offset + length > this.size) throw new RangeError("out of bounds"); await Promise.resolve(); return this.bytes.slice(offset, offset + length); }
 }

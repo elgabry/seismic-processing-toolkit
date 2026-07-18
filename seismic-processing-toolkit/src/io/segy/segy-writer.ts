@@ -96,7 +96,6 @@ export class SegyWriter {
       uint16(sampleFormat, "Sample format code");
       const codec = codecs.get(sampleFormat);
       const revision = options.revision ?? dataset.binaryHeader.values.revision;
-      if (revision !== 0 && revision !== 1 && revision !== 2) throw new HeaderValueError("SEG-Y revision must be 0, 1, or 2.", { severity: "error", code: "REVISION_RANGE", message: `Revision ${revision} is not supported for export.`, recoverable: false });
       const textualHeaders = [...dataset.textualHeaders];
       if (history.length > 0) {
         const encoding = dataset.textualHeaders[0]?.encoding ?? "ascii";
@@ -144,9 +143,8 @@ export class SegyWriter {
         await sink.write(header);
         if (samples) {
           const output = new Uint8Array(samples.length * codec.bytesPerSample);
-          const encoder = codec.encode;
-          if (!encoder) throw new HeaderValueError(`Sample codec ${sampleFormat} cannot encode SEG-Y output.`, { severity: "error", code: "NON_ENCODABLE_CODEC", message: `Codec ${sampleFormat} has no encoder.`, recoverable: false });
-          encoder(samples, 0, samples.length, new DataView(output.buffer), 0, littleEndian);
+          if (!codec.encode) throw new HeaderValueError(`Sample codec ${sampleFormat} cannot encode SEG-Y output.`, { severity: "error", code: "NON_ENCODABLE_CODEC", message: `Codec ${sampleFormat} has no encoder.`, recoverable: false });
+          codec.encode(samples, 0, samples.length, new DataView(output.buffer), 0, littleEndian);
           await sink.write(output);
         } else {
           await copyRange(dataset, sink, dataset.traceIndex.sampleDataOffsets[traceId] ?? 0, sampleCount * dataset.codec.bytesPerSample, options.signal);

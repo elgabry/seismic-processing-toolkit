@@ -9,7 +9,7 @@ export class SegySweepReader implements SweepFileReader {
   public readonly id = "segy";
   public canRead(file: File): boolean { return /\.s(?:e)?gy$/i.test(file.name); }
   public async read(file: File, signal?: AbortSignal): Promise<readonly SweepSignal[]> {
-    const dataset = await SegyReader.open(file, { signal });
+    const dataset = await SegyReader.open(file, signal === undefined ? {} : { signal });
     try {
       const candidates = SweepDetector.fromDataset(dataset);
       const ids = candidates.length > 0 ? candidates.map((candidate) => candidate.traceId) : [0];

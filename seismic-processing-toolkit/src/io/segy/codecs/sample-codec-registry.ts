@@ -3,6 +3,7 @@ import { ibm32ToNumber, numberToIbm32 } from "./ibm-float";
 import type { SampleCodec } from "./sample-codec";
 
 function finite(value: number): number { return Number.isFinite(value) ? value : 0; }
+function roundToNearestInteger(value: number): number { return value < 0 ? -Math.round(-value) : Math.round(value); }
 function bigintSample(value: bigint): number { const limit = BigInt(Number.MAX_SAFE_INTEGER); if (value > limit || value < -limit) throw new RangeError("SEG-Y 64-bit integer sample cannot be represented safely as a JavaScript number."); return Number(value); }
 
 function requireCodecRange(view: DataView, byteOffset: number, sampleCount: number, bytesPerSample: number, destinationLength: number, destinationOffset: number): void {
@@ -41,7 +42,7 @@ function integerCodec(formatCode: number, bytesPerSample: number, name: string, 
     },
     encode(source, sourceOffset, sampleCount, destination, destinationByteOffset, littleEndian) {
       requireCodecRange(destination, destinationByteOffset, sampleCount, bytesPerSample, source.length, sourceOffset);
-      for (let index = 0, offset = destinationByteOffset; index < sampleCount; index += 1, offset += bytesPerSample) writer(destination, offset, Math.round(finite(source[sourceOffset + index] ?? 0)), littleEndian);
+      for (let index = 0, offset = destinationByteOffset; index < sampleCount; index += 1, offset += bytesPerSample) writer(destination, offset, roundToNearestInteger(finite(source[sourceOffset + index] ?? 0)), littleEndian);
     }
   };
 }
@@ -80,9 +81,10 @@ export class SampleCodecRegistry {
   public constructor(initial: readonly SampleCodec[] = codecs) { for (const codec of initial) this.byCode.set(codec.formatCode, codec); }
   public get(formatCode: number): SampleCodec {
     const codec = this.byCode.get(formatCode);
-    if (!codec) throw new UnsupportedSampleFormatError(`SEG-Y sample format ${formatCode} is not supported.`, {
+    const message = formatCode === 4 ? "SEG-Y sample format 4 requires per-sample gain metadata that is not available in standard trace data." : `SEG-Y sample format ${formatCode} is not supported.`;
+    if (!codec) throw new UnsupportedSampleFormatError(message, {
       severity: "error", code: formatCode === 4 ? "FIXED_POINT_GAIN_UNSUPPORTED" : "UNSUPPORTED_SAMPLE_FORMAT",
-      message: formatCode === 4 ? "Format 4 requires per-sample gain metadata that is not available in standard trace data." : `Unsupported SEG-Y sample format code ${formatCode}.`,
+      message,
       recoverable: false
     });
     return codec;

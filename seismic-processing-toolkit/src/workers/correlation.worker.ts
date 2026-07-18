@@ -83,7 +83,8 @@ async function handle(request: WorkerRequest): Promise<void> {
   } catch (error) {
     const value = error instanceof Error ? error : new Error(String(error));
     const block = request.type === "correlate" ? request.block : undefined;
+    const traceRangeForBlock = block === undefined ? undefined : traceRange(block);
     jobs.delete(request.jobId);
-    worker.postMessage({ type: "error", jobId: request.jobId, error: { name: value.name, message: value.message, ...(value.stack ? { stack: value.stack } : {}), processorId: "correlation", ...(block && traceRange(block) ? { traceRange: traceRange(block) } : {}) } } satisfies WorkerResponse);
+    worker.postMessage({ type: "error", jobId: request.jobId, error: { name: value.name, message: value.message, ...(value.stack === undefined ? {} : { stack: value.stack }), processorId: "correlation", ...(traceRangeForBlock === undefined ? {} : { traceRange: traceRangeForBlock }) } } satisfies WorkerResponse);
   }
 }
