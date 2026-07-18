@@ -20,6 +20,8 @@ Open SEG-Y files with the toolbar. Multi-gigabyte inputs are indexed by bounded 
 
 Current core support includes SEG-Y rev 0/1/2 metadata, ASCII/EBCDIC textual headers, non-standard little endian files, extended textual headers, variable trace sample counts, formats 1/2/3/5/6/7/8/9/10/11/12/15/16, streaming subset export, generated/extracted/CSV/WAV/SEG-Y pilots, TAR listing, direct/FFT correlation, gain, filtering, resampling, basic noise tools, gathers, and deconvolution APIs.
 
+The modular SmartSolo reader supports the exact legacy-verified SEG-D 8058 Float32 layout (revisions 1.0 and 2.1), not arbitrary SEG-D. The toolbar exposes local SmartSolo conversion, an offline geometry/QC map, header/trace CSV export, and requested-size plot PNG export. See [SmartSolo support](docs/smartsolo-8058-support.md), [geometry/QC](docs/geometry-and-coordinate-qc.md), and [export workflows](docs/export-workflows.md).
+
 ## Verification status
 
 The repository contains focused unit and integration tests for the priority core paths, including byte-for-byte no-edit SEG-Y export, re-encoding, bounded indexing, codecs, correlation, and basic DSP responses. They require a successful dependency install before their results can be treated as verified. Browser smoke coverage and the modular SmartSolo, map, PNG, and CSV UI workflows remain pending.

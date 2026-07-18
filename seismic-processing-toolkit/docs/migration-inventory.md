@@ -1,16 +1,20 @@
 # Migration inventory
 
-| Existing feature | Existing function/code region | Target module | Migration status | Test coverage | Intentional change |
+| Existing feature | Legacy code location | Target modular code | Migration status | Test coverage | Intentional change |
 |---|---|---|---|---|---|
-| SEG-Y parse / endian / text | `parseFile`, `detectText`, `decodeText` | `io/segy/SegyReader`, headers | implemented; dependency-gate verification pending | reader/codec tests | implausible headers warn instead of assuming IEEE |
-| Sample formats / IBM | `sampleReader`, `ibmToFloat` | `io/segy/codecs` | implemented; dependency-gate verification pending | codec tests | format 4 rejects explicitly |
-| In-memory trace cache | `getTrace` | `SegyTraceAccessor` | implemented/improved; dependency-gate verification pending | reader integration | byte LRU and Blob slicing |
-| Header browser | `renderText`, `renderBin`, `renderTrc` | `ui`, headers | baseline modular UI; compatibility adapter for remaining behavior | reader tests; browser smoke pending | modular UI shows standard schema |
-| Wiggle / VA / density | `draw`, `drawVD` | `visualization/WiggleRenderer` | baseline modular UI; compatibility adapter for gestures | renderer preparation manual; browser smoke pending | legacy remains adapter for full gestures |
-| Map / coordinates | `coordSet`, `drawMap`, `utm2ll` | legacy adapter / gathers | compatibility adapter | legacy reference | modular map pending UI surface |
-| AGC/gain | `getDisplayTrace`, `normFactor` | `processing/gain` | implemented; dependency-gate verification pending | `processing.test.ts` | seconds in public API |
-| Gather sorting | `buildVis`, `gKeyOf` | `processing/gathers` | implemented API; modular UI pending | index-level API smoke coverage pending | supports CMP/custom key |
-| Sweep / resample / correlation | `sweep`, `resampleTo`, `correlate` | `sweep`, `processing/vibroseis`, workers | implemented; browser-worker verification pending | correlation tests | documented same-lag convention |
-| SmartSolo SEG-D 8058 | `convertSegd` | `legacy/reference` | compatibility adapter | legacy reference | dedicated streaming converter pending |
-| SEG-Y/PNG/CSV export | `writeSegy`, `dl` | `SegyWriter`, sink | SEG-Y implemented; PNG/CSV compatibility adapter | writer tests; browser export smoke pending | streaming output replaces monolithic buffer |
-| Keyboard/mouse zoom | interaction region | `visualization` + legacy adapter | compatibility adapter | manual | preserve in v2.2 page while modular gesture controller expands |
+| SEG-Y parse / endian / text | `parseFile`, `detectText`, `decodeText` | `io/segy` | implemented | reader/codec integration | implausible headers warn instead of assuming IEEE |
+| SmartSolo format detection | `segdLooks` | `io/segd/smartsolo8058/smartsolo8058-detector.ts` | implemented for 0x8058 rev 1.0/2.1 | detection fixture | extension alone never classifies a file |
+| SmartSolo header parsing | `convertSegd` GH/XH/EH offsets | `smartsolo8058-headers.ts` | implemented for fields consumed by legacy conversion | integration fixture | raw prefix is retained; unknown vendor fields are not guessed |
+| SmartSolo trace indexing | `convertSegd` trace walk | `smartsolo8058-trace-index.ts` | implemented | bounded-read/truncation tests | lazy 64 KiB windows replace full-file walk |
+| SmartSolo sample decoding | `convertSegd` IEEE loop | `smartsolo8058-trace-accessor.ts` | implemented | known Float32 values | non-finite values are diagnosed and preserved |
+| SmartSolo metadata mapping | `convertSegd` SEG-Y header writes | `smartsolo8058-mapping.ts` | implemented | conversion reopen test | RG source/receiver reversal remains explicit |
+| SmartSolo auxiliary handling | no documented legacy field | trace-class columns/options | intentionally uncertain | diagnostic coverage | traces stay `unknown`, never guessed auxiliary/pilot |
+| SmartSolo conversion UI | legacy open path | `ui/dialogs/smartsolo-conversion-dialog.ts` | implemented | build/typecheck | Blob fallback downloads and reopens converted SEG-Y |
+| SmartSolo conversion worker | none | no worker yet | deferred | n/a | bounded streaming prevents whole-file allocation; worker requires browser performance evidence |
+| Map rendering | `coordSet`, `drawMap` | `geometry`, `visualization/map`, `GeometryMapPanel` | implemented offline | transform/QC tests | no remote tiles or reprojection |
+| Coordinate QC | implicit legacy coordinate helpers | `geometry/geometry-qc-analyzer.ts` | implemented | geometry tests | unknown units produce uncertainty, not metre claims |
+| PNG export | `cv.toBlob`, `mc.toBlob` | `export/png` | implemented | dimension validation | fresh requested-size render, never a DOM screenshot |
+| Trace-sample CSV | `btnCsvTr` | `export/csv/trace-sample-csv-exporter.ts` | implemented | CSV encoder tests | long default; wide mode is capped |
+| Trace-header CSV | `btnCsvHdr` | `export/csv/trace-header-csv-exporter.ts` | implemented | CSV encoder tests | raw and scaled coordinates can both be emitted |
+| Geometry CSV | no direct legacy equivalent | `export/csv/geometry-csv-exporter.ts` | implemented | CSV encoder tests | includes unit/scalar and QC flag columns |
+| Gather CSV | gather UI state | `export/csv/gather-csv-exporter.ts` | implemented | CSV encoder tests | exports trace order only, never duplicate samples |
