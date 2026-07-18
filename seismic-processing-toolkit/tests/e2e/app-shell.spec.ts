@@ -4,7 +4,7 @@ import { expectPng } from "./fixtures/downloads";
 import { segyUpload, sweepCsvUpload } from "./fixtures/seismic-fixtures";
 
 async function loadSegy(page: Page): Promise<void> {
-  await page.goto("/"); await page.getByTestId("segy-file-input").setInputFiles(segyUpload); await expect(page.getByTestId("dataset-name")).toContainText("browser-fixture.segy · 3 traces"); await expect(page.getByTestId("seismic-plot")).toHaveAttribute("data-mode", "wiggle");
+  await page.goto("/"); await page.getByTestId("segy-file-input").setInputFiles(segyUpload); await expect(page.getByTestId("dataset-name")).toContainText("browser-fixture.segy · 3 traces"); await expect(page.getByTestId("seismic-plot")).toHaveAttribute("data-mode", "wiggle"); await expect(page.getByTestId("seismic-plot")).toHaveAttribute("data-time-direction", "zero-top");
 }
 
 test("@smoke opens the local shell, loads SEG-Y, and downloads CSV and PNG", async ({ page }) => {
