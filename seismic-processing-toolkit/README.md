@@ -24,6 +24,10 @@ Current core support includes SEG-Y rev 0/1/2 metadata, ASCII/EBCDIC textual hea
 
 The modular SmartSolo reader supports the exact legacy-verified SEG-D 8058 Float32 layout (revisions 1.0 and 2.1), not arbitrary SEG-D. The toolbar exposes local SmartSolo conversion, an offline geometry/QC map, configurable CSV export, and requested-size PNG export. SmartSolo detection/indexing/decoding/mapping run in a module worker; the main thread retains output-sink and dialog ownership. See [SmartSolo support](docs/smartsolo-8058-support.md), [geometry/QC](docs/geometry-and-coordinate-qc.md), [export workflows](docs/export-workflows.md), [browser testing](docs/browser-testing.md), and [worker pipeline](docs/smartsolo-worker-pipeline.md).
 
+### Publication grayscale seismic section
+
+**Export PNG** now includes **Publication grayscale section**. The reference-style preset produces a 1200 × 2400 portrait density section: positive polarity is black, negative polarity white, and zero amplitude gray 128, with time increasing downwards, a thin black frame, two editable title lines, receiver ticks, and an optional time axis. It creates a new requested-size canvas from selected trace samples; it never captures the UI or changes the active viewport. Its percentile/RMS/trace-RMS/AGC choices are display conditioning only. They do not replace an explicitly documented processing-graph operation or change stored seismic samples. See [export workflows](docs/export-workflows.md) for limits and suggested settings.
+
 ## Verification status
 
 The repository contains focused unit/integration tests and Playwright browser workflows. The Chromium primary workflow covers local SEG-Y loading, map interaction, downloads, SmartSolo worker conversion, structured unsupported-format errors, and privacy request monitoring. `@smoke` runs in Chromium, Firefox, and WebKit. Browser reports, downloaded outputs, and installed browsers are generated artifacts and are not committed.

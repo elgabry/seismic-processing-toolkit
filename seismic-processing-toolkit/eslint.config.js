@@ -6,7 +6,7 @@ const typescriptFiles = ["**/*.ts"];
 
 export default [
   {
-    ignores: ["dist/**", "node_modules/**", ".npm-cache/**", "src/legacy/reference/**", "public/legacy/**"]
+    ignores: ["dist/**", "node_modules/**", ".npm-cache/**", "local-release/**", "src/legacy/reference/**", "public/legacy/**"]
   },
   js.configs.recommended,
   ...tseslint.configs.recommendedTypeChecked.map((config) => ({ ...config, files: typescriptFiles })),
