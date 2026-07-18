@@ -11,3 +11,11 @@
 | SEG-D | legacy compatibility adapter | SmartSolo 8058 migration is tracked in migration notes. |
 
 All entries above are implemented in source. Final runtime verification still requires the complete local npm gate and representative browser fixtures.
+# Phase 2 conversion and export scope
+
+| Area | Supported scope | Limitation |
+|---|---|---|
+| SmartSolo SEG-D | 8058 big-endian IEEE Float32, rev 1.0/2.1, SG/RG/CG legacy layout | no broad SEG-D/vendor support; unknown fields are not inferred |
+| Geometry | raw/scaled SEG-Y header coordinates and offline local map | no CRS inference, remote tiles, or reprojection |
+| CSV | header, samples, geometry, gather order | wide samples have configured safety caps |
+| PNG | deterministic local plot/map render at requested dimensions | requests beyond pixel limits are rejected |
