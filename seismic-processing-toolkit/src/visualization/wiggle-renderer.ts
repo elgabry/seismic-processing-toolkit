@@ -43,23 +43,22 @@ export class WiggleRenderer {
     if (view.mode !== "density") this.drawTraceBaselines(context, margin, plotHeight, ids.length, spacing);
 
     const samples = await Promise.all(ids.map((id) => dataset.traces.readTrace(id)));
+    const sectionPeak = this.robustSectionPeak(samples, view, dt);
+    const horizontalScale = spacing * 0.45 / Math.max(view.clip, Number.EPSILON);
     for (let column = 0; column < ids.length; column += 1) {
       const trace = samples[column] ?? new Float32Array(0);
       const x0 = margin.left + (column + 0.5) * spacing;
       const sampleStart = Math.max(0, Math.floor(view.timeStartSeconds / dt));
       const sampleEnd = Math.min(trace.length - 1, Math.ceil(view.timeEndSeconds / dt));
-      let peak = 0;
-      for (let index = sampleStart; index <= sampleEnd; index += 1) peak = Math.max(peak, Math.abs(trace[index] ?? 0));
-      const scale = peak > 0 ? spacing * 0.45 * view.gain / peak : 0;
       if (view.mode === "density") {
-        this.drawDensityTrace(context, trace, x0, spacing, margin, plotHeight, view, dt, span, peak);
+        this.drawDensityTrace(context, trace, x0, spacing, margin, plotHeight, view, dt, span, sectionPeak);
         continue;
       }
       context.beginPath();
       for (let index = sampleStart; index <= sampleEnd; index += 1) {
         const y = margin.top + ((index * dt - view.timeStartSeconds) / span) * plotHeight;
-        const amplitude = Math.max(-view.clip, Math.min(view.clip, (trace[index] ?? 0) / Math.max(peak, Number.EPSILON) * view.gain));
-        const x = x0 + amplitude * scale;
+        const amplitude = Math.max(-view.clip, Math.min(view.clip, (trace[index] ?? 0) / sectionPeak * view.gain));
+        const x = x0 + amplitude * horizontalScale;
         if (index === sampleStart) context.moveTo(x, y); else context.lineTo(x, y);
       }
       if (view.mode === "variable-area") {
@@ -88,11 +87,32 @@ export class WiggleRenderer {
     context.stroke();
   }
 
-  private drawDensityTrace(context: CanvasRenderingContext2D, trace: Float32Array, x0: number, spacing: number, margin: PlotMargin, plotHeight: number, view: WiggleView, dt: number, span: number, peak: number): void {
+  /** Uses the visible section's 98th-percentile magnitude so a single FDSD spike cannot flatten every trace. */
+  private robustSectionPeak(traces: readonly Float32Array[], view: WiggleView, dt: number): number {
+    let sampleCount = 0;
+    for (const trace of traces) sampleCount += Math.max(0, Math.min(trace.length - 1, Math.ceil(view.timeEndSeconds / dt)) - Math.max(0, Math.floor(view.timeStartSeconds / dt)) + 1);
+    const stride = Math.max(1, Math.ceil(sampleCount / 100_000));
+    const values = new Float32Array(Math.max(1, Math.ceil(sampleCount / stride)));
+    let count = 0;
+    for (const trace of traces) {
+      const first = Math.max(0, Math.floor(view.timeStartSeconds / dt));
+      const last = Math.min(trace.length - 1, Math.ceil(view.timeEndSeconds / dt));
+      for (let index = first; index <= last; index += stride) {
+        const value = trace[index] ?? 0;
+        if (Number.isFinite(value) && count < values.length) values[count++] = Math.abs(value);
+      }
+    }
+    if (count === 0) return 1;
+    const sorted = values.subarray(0, count);
+    sorted.sort();
+    return Math.max(sorted[Math.min(count - 1, Math.floor((count - 1) * 0.98))] ?? 0, Number.EPSILON);
+  }
+
+  private drawDensityTrace(context: CanvasRenderingContext2D, trace: Float32Array, x0: number, spacing: number, margin: PlotMargin, plotHeight: number, view: WiggleView, dt: number, span: number, sectionPeak: number): void {
     const image = context.createImageData(Math.max(1, Math.floor(spacing)), Math.max(1, Math.floor(plotHeight)));
     for (let y = 0; y < image.height; y += 1) {
       const sample = Math.min(trace.length - 1, Math.max(0, Math.round((view.timeStartSeconds + y / image.height * span) / dt)));
-      const normalized = Math.max(-1, Math.min(1, (trace[sample] ?? 0) / Math.max(peak, Number.EPSILON) * view.gain / view.clip));
+      const normalized = Math.max(-1, Math.min(1, (trace[sample] ?? 0) / sectionPeak * view.gain / Math.max(view.clip, Number.EPSILON)));
       const value = Math.round(127.5 + normalized * 127.5);
       for (let x = 0; x < image.width; x += 1) {
         const offset = (y * image.width + x) * 4;
