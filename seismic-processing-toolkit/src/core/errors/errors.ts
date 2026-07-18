@@ -28,6 +28,14 @@ export class SweepFormatError extends SeismicError {}
 export class ProcessingValidationError extends SeismicError {}
 export class ProcessingCancelledError extends SeismicError {}
 export class WorkerExecutionError extends SeismicError {}
+export class SmartSoloFormatError extends SeismicError {}
+export class SmartSoloTruncationError extends SeismicError {}
+export class UnsupportedSmartSoloEncodingError extends SeismicError {}
+export class SmartSoloMappingError extends SeismicError {}
+export class GeometryValidationError extends SeismicError {}
+export class CsvExportError extends SeismicError {}
+export class PngExportError extends SeismicError {}
+export class ExportSizeLimitError extends SeismicError {}
 
 export function throwIfAborted(signal: AbortSignal | undefined, context = "Operation"): void {
   if (signal?.aborted) {
