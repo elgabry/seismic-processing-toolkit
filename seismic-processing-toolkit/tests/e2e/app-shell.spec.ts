@@ -1,7 +1,7 @@
 import { expect, test, type Page } from "@playwright/test";
 import { monitorBrowserErrors } from "./fixtures/browser-errors";
 import { expectPng } from "./fixtures/downloads";
-import { segyUpload } from "./fixtures/seismic-fixtures";
+import { segyUpload, sweepCsvUpload } from "./fixtures/seismic-fixtures";
 
 async function loadSegy(page: Page): Promise<void> {
   await page.goto("/"); await page.getByTestId("segy-file-input").setInputFiles(segyUpload); await expect(page.getByTestId("dataset-name")).toContainText("browser-fixture.segy · 3 traces"); await expect(page.getByTestId("seismic-plot")).toHaveAttribute("data-mode", "wiggle");
@@ -21,4 +21,18 @@ test("loads headers and handles all visual modes without blanking the canvas", a
   const assertBrowserErrors = monitorBrowserErrors(page); await loadSegy(page);
   for (const tab of ["text", "binary", "trace", "qc"]) { await page.getByRole("button", { name: tab, exact: true }).click(); await expect(page.locator("#tab-content")).not.toHaveText("Loading…"); }
   const canvas = page.getByTestId("seismic-plot"); const box = await canvas.boundingBox(); expect(box?.width).toBeGreaterThan(100); expect(box?.height).toBeGreaterThan(100); assertBrowserErrors();
+});
+
+test("loads a local sweep and correlates the opened SEG-Y", async ({ page }) => {
+  const assertBrowserErrors = monitorBrowserErrors(page);
+  await loadSegy(page);
+  await page.getByTestId("sweep-correlation").click();
+  const dialog = page.getByRole("dialog");
+  await dialog.getByTestId("sweep-file-input").setInputFiles(sweepCsvUpload);
+  await expect(dialog.locator("#sweep-summary")).toContainText("5 samples · 1,000 µs interval");
+  const download = page.waitForEvent("download");
+  await dialog.getByTestId("run-sweep-correlation").click();
+  await download;
+  await expect(page.getByTestId("dataset-name")).toContainText("browser-fixture_correlated.sgy · 3 traces");
+  assertBrowserErrors();
 });

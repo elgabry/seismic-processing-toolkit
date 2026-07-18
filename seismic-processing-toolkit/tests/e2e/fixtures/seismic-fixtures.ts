@@ -16,6 +16,11 @@ export const noGeometrySegyUpload = {
   buffer: Buffer.from(makeSegy({ traces: [{ samples: [0, 1, 0] }, { samples: [0, -1, 0] }] }))
 };
 
+export const sweepCsvUpload = {
+  name: "pilot-sweep.csv", mimeType: "text/csv",
+  buffer: Buffer.from("0,0\n0.001,1\n0.002,0\n0.003,-1\n0.004,0\n")
+};
+
 export const smartSoloUpload = {
   name: "browser-smartsolo.segd", mimeType: "application/octet-stream",
   buffer: Buffer.from(makeSmartSolo8058({ sampleIntervalMicroseconds: 2000, traces: [

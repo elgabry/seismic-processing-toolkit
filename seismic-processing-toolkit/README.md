@@ -44,6 +44,10 @@ Open SEG-Y files with the toolbar. Multi-gigabyte inputs are indexed by bounded 
 
 Current core support includes SEG-Y rev 0/1/2 metadata, ASCII/EBCDIC textual headers, non-standard little endian files, extended textual headers, variable trace sample counts, formats 1/2/3/5/6/7/8/9/10/11/12/15/16, streaming subset export, generated/extracted/CSV/WAV/SEG-Y pilots, TAR listing, direct/FFT correlation, gain, filtering, resampling, basic noise tools, gathers, and deconvolution APIs.
 
+### Sweep correlation
+
+Open the uncorrelated SEG-Y first, then choose **Sweep correlation**. Select a local pilot sweep in CSV/text, WAV, SEG-Y, or TAR form, confirm the displayed sample interval, and choose **Run correlation and download SEG-Y**. For CSV/text, use two columns (`timeSeconds,amplitude`) whenever the interval is not 1 ms. The tool performs correlation—equivalent to convolution with the time-reversed sweep—and opens the resulting local SEG-Y alongside the original. The sweep interval must match the SEG-Y trace interval; resample it before loading if it differs. No sweep or seismic data is uploaded.
+
 The modular SmartSolo reader supports the exact legacy-verified SEG-D 8058 Float32 layout (revisions 1.0 and 2.1), not arbitrary SEG-D. The toolbar exposes local SmartSolo conversion, an offline geometry/QC map, configurable CSV export, and requested-size PNG export. SmartSolo detection/indexing/decoding/mapping run in a module worker; the main thread retains output-sink and dialog ownership. See [SmartSolo support](docs/smartsolo-8058-support.md), [geometry/QC](docs/geometry-and-coordinate-qc.md), [export workflows](docs/export-workflows.md), [browser testing](docs/browser-testing.md), and [worker pipeline](docs/smartsolo-worker-pipeline.md).
 
 ## Verification status
