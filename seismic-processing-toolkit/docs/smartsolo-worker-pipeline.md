@@ -12,3 +12,5 @@ The browser conversion path uses a Vite module worker for SmartSolo 8058 detecti
 Progress messages report header/detection/indexing/output preparation/decode/mapping/writing phases with trace or byte counts where available. The worker owns the cloned file and index. The main thread owns UI state, browser output destination, `SegyWriter`, and reopening the finished local SEG-Y. Only newly allocated published batch buffers are transferred; source-cache and live dataset buffers are never detached.
 
 The pipeline remains limited to the documented legacy-compatible SmartSolo 8058 revisions 1.0 and 2.1. It is not a generic SEG-D worker.
+
+The packaged local release retains Vite’s emitted module-worker asset beside the main bundle and serves it as JavaScript from the same loopback origin. Portable-release browser coverage opens the worker through that path; the server never obtains the selected SEG-D `File` or worker batch buffers.

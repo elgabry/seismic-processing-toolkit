@@ -10,7 +10,7 @@
 | SmartSolo metadata mapping | `convertSegd` SEG-Y header writes | `smartsolo8058-mapping.ts` | implemented | conversion reopen test | RG source/receiver reversal remains explicit |
 | SmartSolo auxiliary handling | no documented legacy field | trace-class columns/options | intentionally uncertain | diagnostic coverage | traces stay `unknown`, never guessed auxiliary/pilot |
 | SmartSolo conversion UI | legacy open path | `ui/dialogs/smartsolo-conversion-dialog.ts` | implemented | build/typecheck | Blob fallback downloads and reopens converted SEG-Y |
-| SmartSolo conversion worker | none | no worker yet | deferred | n/a | bounded streaming prevents whole-file allocation; worker requires browser performance evidence |
+| SmartSolo conversion worker | none | `workers/smartsolo.worker.ts` | implemented | protocol/unit + browser conversion coverage | pull-based batches retain main-thread sink ownership |
 | Map rendering | `coordSet`, `drawMap` | `geometry`, `visualization/map`, `GeometryMapPanel` | implemented offline | transform/QC tests | no remote tiles or reprojection |
 | Coordinate QC | implicit legacy coordinate helpers | `geometry/geometry-qc-analyzer.ts` | implemented | geometry tests | unknown units produce uncertainty, not metre claims |
 | PNG export | `cv.toBlob`, `mc.toBlob` | `export/png` | implemented | dimension validation | fresh requested-size render, never a DOM screenshot |
@@ -45,3 +45,16 @@
 | PNG options dialog | target/dimension/background controls | `PngExportDialog` | PNG unit + E2E smoke | implemented; comparison/difference remain future work |
 | Production-preview E2E | Vite preview web server | Playwright config | CI E2E job | implemented |
 | Cross-browser smoke | Chromium/Firefox/WebKit projects | Playwright config | `@smoke` | implemented; structural rather than pixel-equivalence assertions |
+
+## Phase 3 local-distribution matrix
+
+| Item | Current state | Target module | Tests | Completion / remaining limitation |
+|---|---|---|---|---|
+| Loopback static serving | dependency-free Node server | `scripts/serve-local.mjs` | local server tests | implemented; non-loopback requires explicit host |
+| Source checkout startup | npm and native launch helpers | `scripts/run-local.mjs`, launchers | doctor/manual command | implemented; npm remains source-only |
+| Portable release package | built app/server/launchers/checksums | `package-local-release.mjs` | package tests | implemented; archive publication is CI artifact only |
+| SmartSolo worker in release | emitted Vite worker copied with app | `app/assets/*.worker-*.js` | package + release E2E | implemented |
+| Legacy viewer in release | Vite public asset copy | `app/legacy/` | package + release E2E | implemented |
+| Release privacy | static assets only, no upload endpoint | local server + privacy E2E | release E2E | implemented |
+| Cross-origin isolation | opt-in COOP/COEP headers | local server | server + Chromium smoke | implemented; not default |
+| Platform package smoke | Ubuntu/Windows/macOS workflow matrix | `.github/workflows/ci.yml` | CI | implemented; authoritative results pending CI |

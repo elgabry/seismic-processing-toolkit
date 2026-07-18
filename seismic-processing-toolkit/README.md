@@ -2,6 +2,22 @@
 
 Local-first browser tools for SEG-Y reflection/refraction analysis. No runtime code uploads seismic data or calls a processing service.
 
+## Local quick start
+
+Use Node.js 22.12.0 or newer (Node 24 LTS recommended) and npm 10 or newer.
+
+```bash
+cd seismic-processing-toolkit
+npm ci
+npm run local
+```
+
+`npm run local` builds the production application and serves it at a loopback URL such as `http://127.0.0.1:4173`; it opens the default browser when possible. Use `npm run local:no-open` on headless systems, or `npm run local:serve` to serve an already-built `dist/` directory. The server is static: selected SEG-Y/SEG-D files remain in the browser and are never uploaded to it.
+
+For development, use `npm run dev`. For a portable directory that needs Node.js but no npm, source tree, or `node_modules`, run `npm run package:local`; see [local installation](docs/local-installation.md), [local releases](docs/local-release.md), and [troubleshooting](docs/local-troubleshooting.md).
+
+Do not double-click `index.html` with `file://`: ES modules and module workers require an HTTP origin.
+
 ## Commands
 
 ```bash
@@ -14,9 +30,15 @@ npm run build
 npm run benchmark
 npm run test:e2e
 npm run test:e2e:prod
+npm run doctor
+npm run local
+npm run local:serve
+npm run package:local
+npm run test:local-server
+npm run test:e2e:local-release
 ```
 
-Use Node.js 22.12+ (CI uses Node 24) for the locked toolchain. `npm ci` requires the committed `package-lock.json`; use `npm install` only when intentionally updating dependencies and commit the resulting lockfile. `npm run build` produces static files in `dist/`, suitable for an ordinary static web server. Supported browsers are current Chromium, Firefox, and Safari releases with ES2022, `Blob.slice`, typed arrays, and module workers.
+`npm ci` requires the committed `package-lock.json`; use `npm install` only when intentionally updating dependencies and commit the resulting lockfile. `npm run doctor` checks the runtime, installed dependencies, build state, and loopback port without changing anything. `npm run build` produces static files in `dist/`, suitable for an ordinary static web server. Supported browsers are current Chromium, Firefox, and Safari releases with ES2022, `Blob.slice`, typed arrays, and module workers.
 
 Open SEG-Y files with the toolbar. Multi-gigabyte inputs are indexed by bounded Blob slices; samples decode only when they are drawn, inspected, processed, or exported. The **Legacy viewer** button opens the preserved v2.2 compatibility viewer for workflows not yet surfaced by the modular UI.
 
