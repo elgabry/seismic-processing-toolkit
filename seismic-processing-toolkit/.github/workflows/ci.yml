@@ -1,0 +1,29 @@
+name: verification
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  verification:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: seismic-processing-toolkit/package-lock.json
+      - run: npm ci
+        working-directory: seismic-processing-toolkit
+      - run: npm run typecheck
+        working-directory: seismic-processing-toolkit
+      - run: npm run test
+        working-directory: seismic-processing-toolkit
+      - run: npm run lint
+        working-directory: seismic-processing-toolkit
+      - run: npm run build
+        working-directory: seismic-processing-toolkit
+      - run: npm run benchmark
+        working-directory: seismic-processing-toolkit

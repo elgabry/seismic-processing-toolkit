@@ -1,0 +1,2288 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SEG-Y Wiggle Viewer v2.2</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#070b0e; --panel:#0e151b; --panel2:#121b23; --line:#1d2b36; --line2:#273a48;
+  --ink:#cfe3ee; --dim:#7a94a6; --dimmer:#4f6474;
+  --cyan:#22d3ee; --orange:#ff9f1c; --green:#4ade80; --red:#ff4d5e; --violet:#a78bfa;
+  --mono:'IBM Plex Mono',ui-monospace,Menlo,Consolas,monospace;
+  --tech:'Share Tech Mono',ui-monospace,monospace;
+  --cond:'Barlow Condensed','Arial Narrow',sans-serif;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%}
+body{
+  background:var(--bg);color:var(--ink);font-family:var(--mono);font-size:12px;
+  display:flex;flex-direction:column;overflow:hidden;
+  background-image:linear-gradient(rgba(34,211,238,.028) 1px,transparent 1px),linear-gradient(90deg,rgba(34,211,238,.028) 1px,transparent 1px);
+  background-size:44px 44px;
+}
+button,select,input{font-family:inherit;font-size:11px;color:var(--ink)}
+::-webkit-scrollbar{width:9px;height:9px}
+::-webkit-scrollbar-track{background:#0a1015}
+::-webkit-scrollbar-thumb{background:#22384a;border-radius:0}
+::-webkit-scrollbar-thumb:hover{background:#2f4d64}
+
+/* ---------- top bar ---------- */
+header{
+  display:flex;align-items:center;gap:14px;padding:0 12px;height:46px;flex:0 0 auto;
+  background:linear-gradient(180deg,#101a22,#0a1117);border-bottom:1px solid var(--line2);
+}
+.brand{font-family:var(--tech);font-size:16px;letter-spacing:1.5px;color:var(--cyan);white-space:nowrap}
+.brand b{color:var(--orange);font-weight:400}
+.version{font-size:.62em;opacity:.55;margin-left:.4em;color:var(--ink);letter-spacing:0}
+.chips{display:flex;gap:6px;flex-wrap:wrap;overflow:hidden;flex:1 1 auto}
+.chip{
+  font-family:var(--tech);font-size:10.5px;letter-spacing:.5px;padding:3px 7px;
+  border:1px solid var(--line2);background:#0c141a;color:var(--dim);white-space:nowrap
+}
+.chip b{color:var(--ink);font-weight:400}
+.chip.warn{border-color:#5c3a12;background:#1a1206;color:var(--orange)}
+.chip.bad{border-color:#5c1622;background:#1a0509;color:var(--red)}
+.chip.ok{border-color:#14432c;background:#06150e;color:var(--green)}
+.hbtns{display:flex;gap:6px;flex:0 0 auto}
+
+button{
+  background:#152130;border:1px solid var(--line2);padding:5px 10px;cursor:pointer;
+  letter-spacing:.4px;transition:.12s;font-family:var(--tech);text-transform:uppercase
+}
+button:hover{background:#1d3247;border-color:var(--cyan);color:#fff}
+button:active{transform:translateY(1px)}
+button:focus-visible,select:focus-visible,input:focus-visible{outline:2px solid var(--cyan);outline-offset:1px}
+button.pri{background:#0d3a44;border-color:#1d6b7d;color:var(--cyan)}
+button.pri:hover{background:#14515f}
+button.sm{padding:3px 7px;font-size:10px}
+button[disabled]{opacity:.35;cursor:not-allowed}
+
+/* ---------- layout ---------- */
+main{flex:1 1 auto;display:grid;grid-template-columns:236px minmax(0,1fr) 430px;min-height:0}
+aside,section{min-height:0;min-width:0}
+.rail{background:var(--panel);border-right:1px solid var(--line);overflow-y:auto;padding-bottom:20px}
+.info{background:var(--panel);border-left:1px solid var(--line);display:flex;flex-direction:column}
+.stage{position:relative;display:flex;flex-direction:column;background:#050809}
+
+.grp{border-bottom:1px solid var(--line)}
+.grp>h3{
+  font-family:var(--cond);font-size:12px;font-weight:600;letter-spacing:1.6px;text-transform:uppercase;
+  color:var(--dimmer);padding:7px 10px 5px;background:#0b1218;border-bottom:1px solid #16222c;
+  display:flex;justify-content:space-between;align-items:center
+}
+.grp>h3 span{color:var(--cyan);font-size:10px;letter-spacing:.5px}
+.grp>div{padding:8px 10px;display:flex;flex-direction:column;gap:7px}
+.row{display:flex;align-items:center;gap:6px}
+.row>label{flex:0 0 62px;color:var(--dim);font-size:10.5px;letter-spacing:.3px}
+.row>label.w{flex:0 0 78px}
+select,input[type=number],input[type=text]{
+  background:#0a1218;border:1px solid var(--line2);padding:3px 5px;flex:1 1 auto;min-width:0;border-radius:0
+}
+input[type=number]{text-align:right}
+input[type=range]{-webkit-appearance:none;appearance:none;height:3px;background:#22384a;flex:1 1 auto;min-width:0}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:12px;height:16px;background:var(--orange);cursor:pointer;border:none}
+input[type=range]::-moz-range-thumb{width:12px;height:16px;background:var(--orange);cursor:pointer;border:none;border-radius:0}
+.val{font-family:var(--tech);color:var(--orange);min-width:48px;text-align:right;font-size:11px}
+.seg{display:flex;gap:0;border:1px solid var(--line2)}
+.seg button{flex:1;border:none;border-right:1px solid var(--line2);padding:4px 2px;font-size:9.5px;background:#0a1218;color:var(--dim)}
+.seg button:last-child{border-right:none}
+.seg button.on{background:#0d3a44;color:var(--cyan)}
+.chk{display:flex;align-items:center;gap:6px;cursor:pointer;color:var(--dim);font-size:10.5px}
+.chk input{accent-color:var(--cyan);width:12px;height:12px}
+.hint{color:var(--dimmer);font-size:9.5px;line-height:1.4}
+.flist{list-style:none;display:flex;flex-direction:column;gap:3px;max-height:190px;overflow-y:auto;margin:0 -2px}
+.flist li{
+  display:flex;align-items:center;gap:6px;padding:4px 5px;background:#0a1218;border:1px solid var(--line);
+  cursor:pointer;transition:.12s
+}
+.flist li:hover{border-color:var(--line2);background:#101a22}
+.flist li.act{border-color:var(--cyan);background:#0d2a33}
+.flist li .sw{width:3px;align-self:stretch;flex:0 0 3px}
+.flist li .fn{flex:1 1 auto;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:10.5px;color:var(--ink)}
+.flist li.act .fn{color:var(--cyan)}
+.flist li .fm{flex:0 0 auto;font-size:9px;color:var(--dimmer);font-family:var(--tech)}
+.flist li .x{
+  flex:0 0 auto;border:none;background:transparent;color:var(--dimmer);padding:0 2px;font-size:12px;line-height:1;cursor:pointer
+}
+.flist li .x:hover{color:var(--red);background:transparent}
+.flist li.dead .fn{color:var(--red)}
+.flist li .st{
+  flex:0 0 auto;border:1px solid var(--line2);background:#0a1218;color:var(--dimmer);
+  padding:0 3px;font-size:9px;line-height:13px;cursor:pointer;font-family:var(--tech)
+}
+.flist li .st.vib{border-color:#5c3a12;background:#1a1206;color:var(--orange)}
+.flist li .st:hover{border-color:var(--cyan);color:var(--cyan);background:#0a1218}
+#swPrev{
+  position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);z-index:6;
+  background:#0a1117;border:1px solid var(--line2);padding:8px;box-shadow:0 8px 40px #000
+}
+#swPrev.hide{display:none}
+#swPrev h4{font-family:var(--cond);letter-spacing:1.4px;text-transform:uppercase;color:var(--cyan);
+  font-size:12px;margin-bottom:4px;display:flex;justify-content:space-between;align-items:center}
+#swPrev canvas{display:block;background:#050809;border:1px solid var(--line)}
+#swPrev .hint{margin-top:4px;max-width:520px}
+
+/* ---------- canvas ---------- */
+#wrap{flex:1 1 auto;position:relative;min-height:0}
+#wig{position:absolute;inset:0;width:100%;height:100%;display:block;cursor:crosshair}
+#readout{
+  position:absolute;right:8px;top:6px;font-family:var(--tech);font-size:10.5px;color:var(--cyan);
+  background:rgba(5,10,14,.86);border:1px solid var(--line2);padding:3px 7px;pointer-events:none;letter-spacing:.5px
+}
+#drop{
+  position:absolute;inset:0;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:14px;
+  background:rgba(5,8,10,.97);z-index:5;text-align:center;padding:20px
+}
+#drop.hide{display:none}
+#drop h2{font-family:var(--cond);font-size:26px;font-weight:600;letter-spacing:3px;color:var(--dim);text-transform:uppercase}
+#drop p{color:var(--dimmer);max-width:440px;line-height:1.7}
+#drop.over{background:rgba(6,26,32,.97);box-shadow:inset 0 0 0 2px var(--cyan)}
+.statusbar{
+  flex:0 0 auto;height:22px;display:flex;align-items:center;gap:12px;padding:0 8px;
+  background:#0a1117;border-top:1px solid var(--line);font-family:var(--tech);font-size:10px;color:var(--dimmer);letter-spacing:.5px
+}
+.statusbar b{color:var(--dim);font-weight:400}
+
+/* ---------- info panel ---------- */
+.tabs{display:flex;flex:0 0 auto;background:#0b1218;border-bottom:1px solid var(--line2)}
+.tabs button{
+  flex:1;border:none;border-right:1px solid var(--line);background:transparent;color:var(--dimmer);
+  padding:8px 2px;font-size:10px;letter-spacing:.6px
+}
+.tabs button.on{background:var(--panel2);color:var(--cyan);box-shadow:inset 0 -2px 0 var(--cyan)}
+.tabs button:hover{color:var(--ink)}
+.pane{flex:1 1 auto;overflow:auto;display:none;padding:8px}
+.pane.on{display:block}
+.paneflex{display:none;flex-direction:column;flex:1 1 auto;min-height:0}
+.paneflex.on{display:flex}
+
+pre.card{
+  font-family:var(--tech);font-size:11px;line-height:1.5;white-space:pre;color:var(--green);
+  background:#060b0e;border:1px solid var(--line);padding:8px;overflow:auto;letter-spacing:.3px
+}
+table{border-collapse:collapse;width:100%;font-size:10.5px}
+th,td{border-bottom:1px solid #16222c;padding:2px 5px;text-align:left;white-space:nowrap}
+th{color:var(--dimmer);font-weight:500;background:#0b1218;position:sticky;top:0;font-size:9.5px;letter-spacing:.5px;z-index:1}
+td.b{color:var(--dimmer);font-size:9.5px;width:64px}
+td.v{color:var(--orange);text-align:right;width:96px;font-variant-numeric:tabular-nums}
+td.n{color:var(--ink)}
+td.e{color:var(--dim);font-size:9.5px}
+tr:hover td{background:#101a22}
+tr.sel td{background:#0d2a33}
+tbody tr{cursor:default}
+#tblTraces tbody tr{cursor:pointer}
+.subhead{
+  font-family:var(--cond);letter-spacing:1.4px;text-transform:uppercase;color:var(--cyan);font-size:11px;
+  margin:10px 0 4px;padding-bottom:2px;border-bottom:1px solid var(--line)
+}
+.subhead:first-child{margin-top:0}
+.toolbar{display:flex;gap:5px;align-items:center;padding:6px;border-bottom:1px solid var(--line);background:#0b1218;flex-wrap:wrap}
+.toolbar label{color:var(--dim);font-size:10px}
+#mapc{width:100%;background:#060b0e;border:1px solid var(--line);display:block;cursor:crosshair}
+.kv{display:grid;grid-template-columns:104px 1fr;gap:2px 8px;font-size:10.5px;margin-top:6px}
+.kv dt{color:var(--dimmer)}
+.kv dd{color:var(--ink);font-variant-numeric:tabular-nums}
+a{color:var(--cyan)}
+.note{border-left:2px solid var(--orange);background:#150e04;color:#e8c89a;padding:6px 8px;font-size:10px;line-height:1.5;margin-top:8px}
+.note.red{border-color:var(--red);background:#160508;color:#f0a8b2}
+.legend{display:flex;gap:12px;font-size:10px;color:var(--dim);padding:6px 2px 0}
+.legend i{display:inline-block;width:8px;height:8px;margin-right:4px}
+@media (max-width:1200px){main{grid-template-columns:210px minmax(0,1fr) 340px}}
+@media (max-width:900px){main{grid-template-columns:1fr;grid-template-rows:auto 46vh 1fr;overflow:auto}}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="brand">SEG-Y <b>WIGGLE</b> VIEWER<span class="version">v2.2</span></div>
+  <div class="chips" id="chips"><span class="chip">NO FILE LOADED</span></div>
+  <div class="hbtns">
+    <button class="pri" id="btnOpen">Open SEG-Y</button>
+    <button id="btnDemo" title="Generate a synthetic shot gather to test the display">Demo</button>
+  </div>
+  <input type="file" id="file" accept=".sgy,.segy,.SGY,.SEGY" multiple style="display:none">
+</header>
+
+<main>
+  <!-- ============ CONTROL RAIL ============ -->
+  <aside class="rail">
+    <div class="grp">
+      <h3>Files <span id="fileTag"></span></h3>
+      <div>
+        <ul class="flist" id="fileList"></ul>
+        <label class="chk"><input type="checkbox" id="combine">Combine all files into one display</label>
+        <div class="row"><button class="sm" id="btnAdd" style="flex:1">Add files</button><button class="sm" id="btnClear">Clear</button></div>
+        <div class="hint" id="fileHint">Load several files at once — click one to view it, or combine them into a single section.</div>
+      </div>
+    </div>
+
+    <div class="grp">
+      <h3>Vibroseis <span id="vibTag"></span></h3>
+      <div>
+        <label class="chk"><input type="checkbox" id="corrOn">Correlate sweep records</label>
+        <label class="chk"><input type="checkbox" id="rsOn">Resample records</label>
+        <div class="row" id="rsRow" style="display:none"><label>to</label><input type="number" id="rsDt" value="1" min="0.05" step="0.25"><span class="hint">ms · anti-alias low-pass</span></div>
+        <div class="row"><label>Source</label>
+          <select id="swSrc"><option value="par">Typed parameters</option><option value="pilot">Pilot trace (.sgy)</option></select></div>
+        <div class="row" id="pilotRow" style="display:none">
+          <button class="sm" id="btnPilot" style="flex:1">Load pilot file&hellip;</button>
+          <input type="file" id="pilotInp" style="display:none">
+        </div>
+        <div class="hint" id="pilotHint" style="display:none"></div>
+        <div class="row"><label>Start f</label><input type="number" id="swF1" value="10" step="1"><span class="hint">Hz</span></div>
+        <div class="row"><label>End f</label><input type="number" id="swF2" value="100" step="1"><span class="hint">Hz</span></div>
+        <div class="row"><label>Length</label><input type="number" id="swLen" value="8000" step="100"><span class="hint">ms</span></div>
+        <div class="row"><label>Taper st</label><input type="number" id="swTapS" value="250" step="10"><span class="hint">ms</span></div>
+        <div class="row"><label>Taper end</label><input type="number" id="swTapE" value="250" step="10"><span class="hint">ms</span></div>
+        <div class="row"><label>Phase</label><input type="number" id="swPh" value="0" step="15"><span class="hint">deg</span></div>
+        <div class="row"><label>Type</label>
+          <select id="swType"><option value="lin">Linear</option><option value="log">Nonlinear (log)</option></select></div>
+        <div class="row"><label>Output</label>
+          <select id="swOut"><option value="auto">Listen time</option><option value="full">Full record</option></select></div>
+        <div class="row"><label>Lag</label><input type="number" id="swLag" value="0" step="50"><span class="hint">ms</span></div>
+        <div class="row"><button id="btnRunCorr" style="flex:1">Run correlation</button></div>
+        <div class="hint" id="corrPend" style="display:none;color:var(--orange)">Parameters changed — press Run correlation to apply.</div>
+        <div class="row"><button class="sm" id="btnSwHdr" style="flex:1">From header</button><button class="sm" id="btnSwPrev" style="flex:1">Sweep + Klauder</button></div>
+        <div class="hint" id="vibHint">Mark which files are vibroseis with the V/H badge in the file list.</div>
+      </div>
+    </div>
+
+    <div class="grp">
+      <h3>Gather <span id="gathTag"></span></h3>
+      <div>
+        <div class="row"><label>Sort</label>
+          <select id="gMode">
+            <option value="none">None (file order)</option>
+            <option value="shot">Common shot</option>
+            <option value="rcv">Common receiver</option>
+            <option value="off">Common offset</option>
+          </select></div>
+        <div class="row" id="gKeyRow"><label>Key</label><select id="gKey"></select></div>
+        <div class="row" id="gBinRow" style="display:none"><label>Bin</label><input type="number" id="gBin" value="1" min="0.1" step="0.5"><span class="hint">m</span></div>
+        <div class="row"><label>Ensemble</label><select id="gEns"></select></div>
+        <div class="row"><button class="sm" id="gPrev">&#9664;</button><button class="sm" id="gNext" style="flex:1">Next &#9654;</button></div>
+        <div class="hint" id="gHint">Sorting spans every file on the axis — tick Combine to gather across files.</div>
+      </div>
+    </div>
+
+    <div class="grp">
+      <h3>Display</h3>
+      <div>
+        <div class="seg" id="segMode">
+          <button data-v="wigva" class="on">Wig+VA</button>
+          <button data-v="wig">Wiggle</button>
+          <button data-v="va">VA</button>
+          <button data-v="vd">Density</button>
+        </div>
+        <div class="row"><label>Colour</label>
+          <select id="cmap">
+            <option value="gray">Grayscale</option>
+            <option value="seis">Blue–White–Red</option>
+            <option value="hot">Hot</option>
+            <option value="cyanorange">Cyan–Orange</option>
+          </select>
+        </div>
+        <label class="chk"><input type="checkbox" id="negFill">Fill negative lobes</label>
+        <label class="chk"><input type="checkbox" id="polarity">Reverse polarity</label>
+        <label class="chk"><input type="checkbox" id="grid" checked>Show grid</label>
+      </div>
+    </div>
+
+    <div class="grp">
+      <h3>Gain <span id="gainTag">1.00×</span></h3>
+      <div>
+        <div class="row"><input type="range" id="gain" min="-2.3" max="4.0" step="0.01" value="0"><span class="val" id="gainV">1.00×</span></div>
+        <div class="row"><label>Scaling</label>
+          <select id="norm">
+            <option value="tmax">Trace max</option>
+            <option value="trms">Trace RMS</option>
+            <option value="fmax">File max</option>
+            <option value="frms">File RMS</option>
+            <option value="none">None (raw)</option>
+          </select>
+        </div>
+        <div class="row"><label>Clip</label><input type="range" id="clip" min="0.5" max="8" step="0.1" value="2"><span class="val" id="clipV">2.0</span></div>
+        <label class="chk"><input type="checkbox" id="agc">AGC</label>
+        <div class="row"><label>Window</label><input type="number" id="agcWin" value="100" min="5" step="5" style="max-width:70px"><span class="hint">ms</span></div>
+      </div>
+    </div>
+
+    <div class="grp">
+      <h3>Traces <span id="trTag"></span></h3>
+      <div>
+        <div class="row"><label>First</label><input type="number" id="trFirst" value="1" min="1"></div>
+        <div class="row"><label>Count</label><input type="number" id="trCount" value="16" min="1"></div>
+        <div class="row"><label>Step</label><input type="number" id="trStep" value="1" min="1"></div>
+        <div class="row"><button class="sm" id="btnAllTr" style="flex:1">All traces</button><button class="sm" id="btnPrev">◀</button><button class="sm" id="btnNext">▶</button></div>
+      </div>
+    </div>
+
+    <div class="grp">
+      <h3>Time window</h3>
+      <div>
+        <div class="row"><label>Start</label><input type="number" id="t0" value="0" step="1"><span class="hint">ms</span></div>
+        <div class="row"><label>End</label><input type="number" id="t1" value="1000" step="1"><span class="hint">ms</span></div>
+        <div class="row"><button class="sm" id="btnFit" style="flex:1">Fit all</button><button class="sm" id="btnZin">Zoom +</button><button class="sm" id="btnZout">Zoom −</button></div>
+        <div class="hint">Wheel = zoom time · Shift+wheel = pan · Drag = pan · Click = select trace</div>
+      </div>
+    </div>
+
+    <div class="grp">
+      <h3>Export</h3>
+      <div>
+        <button id="btnSgyGather">SEG-Y — this gather</button>
+        <button id="btnSgyAll">SEG-Y — all gathers</button>
+        <button id="btnPng">Save wiggle PNG</button>
+        <button id="btnCsvHdr">Trace headers → CSV</button>
+        <button id="btnCsvTr">Selected trace → CSV</button>
+      </div>
+    </div>
+  </aside>
+
+  <!-- ============ PLOT STAGE ============ -->
+  <section class="stage">
+    <div id="wrap">
+      <canvas id="wig"></canvas>
+      <div id="readout">—</div>
+      <div id="swPrev" class="hide">
+        <h4>Sweep &amp; Klauder wavelet <button class="sm" id="swPrevX">Close</button></h4>
+        <canvas id="swPrevC" width="560" height="240"></canvas>
+        <div class="hint" id="swPrevT"></div>
+      </div>
+      <div id="drop">
+        <h2>Drop SEG-Y files</h2>
+        <p>Open as many as you like — view them one at a time, or combine them into a single section. Reads SEG-Y rev 0 / rev 1 / rev 2 — IBM &amp; IEEE floats, 1/2/3/4/8-byte integers, EBCDIC or ASCII text headers, big or little endian. Everything runs locally in this page; nothing is uploaded.</p>
+        <div class="hbtns"><button class="pri" id="btnOpen2">Open SEG-Y files</button><button id="btnDemo2">Load demo gather</button></div>
+      </div>
+    </div>
+    <div class="statusbar">
+      <span>FILE <b id="stF">—</b></span><span>TRACE <b id="stTr">—</b></span><span>TIME <b id="stT">—</b></span>
+      <span>AMP <b id="stA">—</b></span><span>SPP <b id="stSpp">—</b></span>
+      <span style="margin-left:auto" id="stMsg">Ready</span>
+    </div>
+  </section>
+
+  <!-- ============ INFO PANEL ============ -->
+  <aside class="info">
+    <div class="tabs" id="tabs">
+      <button data-p="pText" class="on">Text hdr</button>
+      <button data-p="pBin">Binary hdr</button>
+      <button data-p="pTrc">Trace hdr</button>
+      <button data-p="pTbl">Trace table</button>
+      <button data-p="pLoc">Location</button>
+    </div>
+
+    <div class="pane on" id="pText">
+      <div class="toolbar">
+        <label>Encoding</label>
+        <select id="encSel" style="flex:0 0 130px"><option value="auto">Auto-detect</option><option value="ebcdic">EBCDIC (cp037)</option><option value="ascii">ASCII</option></select>
+        <span class="hint" id="encTag"></span>
+      </div>
+      <pre class="card" id="txtHdr">—</pre>
+      <div id="extHdrs"></div>
+    </div>
+
+    <div class="pane" id="pBin"><table id="tblBin"><thead><tr><th>Bytes</th><th>Field</th><th style="text-align:right">Value</th><th>Meaning</th></tr></thead><tbody></tbody></table></div>
+
+    <div class="pane" id="pTrc">
+      <div class="toolbar">
+        <label>Trace</label><input type="number" id="trcSel" value="1" min="1" style="flex:0 0 80px">
+        <label class="chk"><input type="checkbox" id="hexDump">Hex dump</label>
+        <span class="hint" id="trcTag"></span>
+      </div>
+      <table id="tblTrc"><thead><tr><th>Bytes</th><th>Field</th><th style="text-align:right">Value</th><th>Meaning</th></tr></thead><tbody></tbody></table>
+      <pre class="card" id="trcHex" style="display:none;margin-top:8px"></pre>
+    </div>
+
+    <div class="paneflex" id="pTbl">
+      <div class="toolbar"><span class="hint">Click a row to select and centre that trace.</span></div>
+      <div style="flex:1 1 auto;overflow:auto"><table id="tblTraces"><thead></thead><tbody></tbody></table></div>
+    </div>
+
+    <div class="pane" id="pLoc">
+      <div class="toolbar">
+        <label>Source</label>
+        <select id="coordSrc" style="flex:1 1 auto"></select>
+        <label>CRS</label>
+        <select id="crsSel" style="flex:0 0 108px">
+          <option value="auto">Auto</option>
+          <option value="ll">Lat / Lon</option>
+          <option value="arcsec">Arc-seconds</option>
+          <option value="dms">DMS packed</option>
+          <option value="utm">UTM zone…</option>
+          <option value="local">Local grid</option>
+        </select>
+        <span id="utmBox" style="display:none;gap:4px;align-items:center">
+          <input type="number" id="utmZone" value="36" min="1" max="60" style="flex:0 0 44px">
+          <select id="utmHemi" style="flex:0 0 46px"><option value="N">N</option><option value="S">S</option></select>
+        </span>
+        <label class="chk"><input type="checkbox" id="basemap">OSM basemap</label>
+        <button class="sm" id="btnMapPng">PNG</button>
+      </div>
+      <canvas id="mapc" width="820" height="700"></canvas>
+      <div class="legend" id="legend">
+        <span><i style="background:var(--cyan)"></i>Receiver</span>
+        <span><i style="background:var(--orange);clip-path:polygon(50% 0,100% 100%,0 100%)"></i>Source</span>
+        <span><i style="background:var(--green)"></i>Selected</span>
+      </div>
+      <dl class="kv" id="locKv"></dl>
+      <div id="locNote"></div>
+      <div id="locLinks" style="margin-top:8px"></div>
+    </div>
+  </aside>
+</main>
+
+<script>
+"use strict";
+/* ============================================================================
+   SEG-Y WIGGLE VIEWER v2.2
+   Single-file, fully offline SEG-Y reader / wiggle display / header browser.
+   Holds any number of files at once: view one at a time, or combine them all
+   into a single section on a shared time axis.
+   Processing (the pilot-correlation workflow): read the uncorrelated record,
+   optionally anti-alias filter + resample it, cross-correlate with the pilot
+   (typed parameters or a pilot trace from file, asymmetric tapers, lag),
+   normalized by pilot energy. Parameters are staged and applied with the
+   Run correlation button. Reads SEG-Y rev 0/1/2 (including wrapped 16-bit
+   sample counts) and SmartSolo SEG-D 8058 (rev 1.0 / 2.1, SG / RG / CG),
+   plus common shot / receiver / offset gather sorting across files.
+   Anything on the axis can be written back out as a rev-1 SEG-Y file.
+   ==========================================================================*/
+
+/* ---------- EBCDIC cp037 -> ASCII ---------- */
+const EBCDIC = [32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,46,60,40,43,124,38,32,32,32,32,32,32,32,32,32,33,36,42,41,59,32,45,47,32,32,32,32,32,32,32,32,32,44,37,95,62,63,32,32,32,32,32,32,32,32,32,96,58,35,64,39,61,34,32,97,98,99,100,101,102,103,104,105,32,32,32,32,32,32,32,106,107,108,109,110,111,112,113,114,32,32,32,32,32,32,32,126,115,116,117,118,119,120,121,122,32,32,32,32,32,32,94,32,32,32,32,32,32,32,32,32,91,93,32,32,32,32,123,65,66,67,68,69,70,71,72,73,32,32,32,32,32,32,125,74,75,76,77,78,79,80,81,82,32,32,32,32,32,32,92,32,83,84,85,86,87,88,89,90,32,32,32,32,32,32,48,49,50,51,52,53,54,55,56,57,32,32,32,32,32,32];
+
+/* ---------- enumerations ---------- */
+const FMT = {1:['IBM 4-byte float',4],2:['4-byte signed int',4],3:['2-byte signed int',2],4:['4-byte fixed-point + gain',4],
+  5:['IEEE 4-byte float',4],6:['IEEE 8-byte float',8],7:['3-byte signed int',3],8:['1-byte signed int',1],
+  9:['8-byte signed int',8],10:['4-byte unsigned int',4],11:['2-byte unsigned int',2],12:['8-byte unsigned int',8],
+  15:['3-byte unsigned int',3],16:['1-byte unsigned int',1]};
+const SORT={'-1':'Other',0:'Unknown',1:'As recorded',2:'CDP ensemble',3:'Single fold continuous',4:'Horizontally stacked',
+  5:'Common source point',6:'Common receiver point',7:'Common offset point',8:'Common mid-point',9:'Common conversion point'};
+const TRID={'-1':'Other',0:'Unknown',1:'Seismic data',2:'Dead',3:'Dummy',4:'Time break',5:'Uphole',6:'Sweep',7:'Timing',
+  8:'Water break',9:'Near-field gun signature',10:'Far-field gun signature',11:'Seismic pressure sensor',
+  12:'Multicomponent — vertical',13:'Multicomponent — cross-line',14:'Multicomponent — in-line',15:'Rotated vertical',
+  16:'Transverse horizontal',17:'Radial horizontal',18:'Vertical vector',19:'Cross-line vector',20:'In-line vector'};
+const COUNIT={0:'Not specified',1:'Length (m or ft)',2:'Seconds of arc',3:'Decimal degrees',4:'Degrees, minutes, seconds'};
+const MEAS={0:'Not specified',1:'Metres',2:'Feet'};
+const TIMBAS={0:'Not specified',1:'Local',2:'GMT',3:'Other',4:'UTC',5:'GPS'};
+const YESNO={0:'Not specified',1:'Yes',2:'No'};
+const SWEEP={0:'—',1:'Linear',2:'Parabolic',3:'Exponential',4:'Other'};
+const POL={0:'Not specified',1:'Increase in pressure = negative number',2:'Increase in pressure = positive number'};
+
+/* ---------- header field maps  [byte1, size, type, name, enum] ---------- */
+const BIN_FIELDS=[
+ [3201,4,'i','Job identification number'],[3205,4,'i','Line number'],[3209,4,'i','Reel number'],
+ [3213,2,'i','Traces per ensemble'],[3215,2,'i','Auxiliary traces per ensemble'],
+ [3217,2,'u','Sample interval (µs)'],[3219,2,'u','Sample interval, field (µs)'],
+ [3221,2,'u','Samples per trace'],[3223,2,'u','Samples per trace, field'],
+ [3225,2,'i','Data sample format code',FMT],[3227,2,'i','Ensemble fold'],[3229,2,'i','Trace sorting code',SORT],
+ [3231,2,'i','Vertical sum code'],[3233,2,'i','Sweep frequency at start (Hz)'],[3235,2,'i','Sweep frequency at end (Hz)'],
+ [3237,2,'i','Sweep length (ms)'],[3239,2,'i','Sweep type code',SWEEP],[3241,2,'i','Trace # of sweep channel'],
+ [3243,2,'i','Sweep taper at start (ms)'],[3245,2,'i','Sweep taper at end (ms)'],[3247,2,'i','Taper type',SWEEP],
+ [3249,2,'i','Correlated data traces',YESNO],[3251,2,'i','Binary gain recovered',YESNO],
+ [3253,2,'i','Amplitude recovery method'],[3255,2,'i','Measurement system',MEAS],
+ [3257,2,'i','Impulse signal polarity',POL],[3259,2,'i','Vibratory polarity code'],
+ [3501,2,'u','SEG-Y revision number'],[3503,2,'i','Fixed length trace flag',YESNO],
+ [3505,2,'i','Extended textual headers']
+];
+const TRC_FIELDS=[
+ [1,4,'i','Trace sequence number in line'],[5,4,'i','Trace sequence number in file'],
+ [9,4,'i','Original field record number'],[13,4,'i','Trace number within field record'],
+ [17,4,'i','Energy source point number'],[21,4,'i','Ensemble (CDP) number'],
+ [25,4,'i','Trace number within ensemble'],[29,2,'i','Trace identification code',TRID],
+ [31,2,'i','Vertically summed traces'],[33,2,'i','Horizontally stacked traces'],[35,2,'i','Data use'],
+ [37,4,'i','Source–receiver offset'],[41,4,'i','Receiver group elevation'],[45,4,'i','Surface elevation at source'],
+ [49,4,'i','Source depth below surface'],[53,4,'i','Datum elevation at receiver'],[57,4,'i','Datum elevation at source'],
+ [61,4,'i','Water depth at source'],[65,4,'i','Water depth at receiver'],
+ [69,2,'i','Scalar for elevations/depths'],[71,2,'i','Scalar for coordinates'],
+ [73,4,'i','Source X'],[77,4,'i','Source Y'],[81,4,'i','Receiver X'],[85,4,'i','Receiver Y'],
+ [89,2,'i','Coordinate units',COUNIT],[91,2,'i','Weathering velocity'],[93,2,'i','Subweathering velocity'],
+ [95,2,'i','Uphole time at source (ms)'],[97,2,'i','Uphole time at receiver (ms)'],
+ [99,2,'i','Source static correction (ms)'],[101,2,'i','Receiver static correction (ms)'],
+ [103,2,'i','Total static applied (ms)'],[105,2,'i','Lag time A (ms)'],[107,2,'i','Lag time B (ms)'],
+ [109,2,'i','Delay recording time (ms)'],[111,2,'i','Mute time start (ms)'],[113,2,'i','Mute time end (ms)'],
+ [115,2,'u','Samples in this trace'],[117,2,'u','Sample interval (µs)'],
+ [119,2,'i','Gain type of field instruments'],[121,2,'i','Instrument gain constant (dB)'],
+ [123,2,'i','Instrument early gain (dB)'],[125,2,'i','Correlated',YESNO],
+ [127,2,'i','Sweep frequency at start (Hz)'],[129,2,'i','Sweep frequency at end (Hz)'],
+ [131,2,'i','Sweep length (ms)'],[133,2,'i','Sweep type',SWEEP],[135,2,'i','Sweep taper at start (ms)'],
+ [137,2,'i','Sweep taper at end (ms)'],[139,2,'i','Taper type',SWEEP],
+ [141,2,'i','Alias filter frequency (Hz)'],[143,2,'i','Alias filter slope (dB/oct)'],
+ [145,2,'i','Notch filter frequency (Hz)'],[147,2,'i','Notch filter slope (dB/oct)'],
+ [149,2,'i','Low-cut frequency (Hz)'],[151,2,'i','High-cut frequency (Hz)'],
+ [153,2,'i','Low-cut slope (dB/oct)'],[155,2,'i','High-cut slope (dB/oct)'],
+ [157,2,'i','Year data recorded'],[159,2,'i','Day of year'],[161,2,'i','Hour of day'],
+ [163,2,'i','Minute of hour'],[165,2,'i','Second of minute'],[167,2,'i','Time basis code',TIMBAS],
+ [169,2,'i','Trace weighting factor'],[171,2,'i','Geophone group # of roll switch'],
+ [173,2,'i','Geophone group # of first trace'],[175,2,'i','Geophone group # of last trace'],
+ [177,2,'i','Gap size'],[179,2,'i','Over travel'],
+ [181,4,'i','CDP X (rev1)'],[185,4,'i','CDP Y (rev1)'],[189,4,'i','In-line number (rev1)'],
+ [193,4,'i','Cross-line number (rev1)'],[197,4,'i','Shotpoint number (rev1)'],
+ [201,2,'i','Scalar for shotpoint (rev1)'],[203,2,'i','Trace value measurement unit (rev1)'],
+ [205,4,'i','Transduction constant mantissa (rev1)'],[209,2,'i','Transduction constant exponent (rev1)'],
+ [211,2,'i','Transduction units (rev1)'],[213,2,'i','Device / trace identifier (rev1)'],
+ [215,2,'i','Scalar for times 95–114 (rev1)'],[217,2,'i','Source type / orientation (rev1)'],
+ [219,4,'i','Source energy direction mantissa (rev1)'],[223,2,'i','Source energy direction exponent (rev1)'],
+ [225,4,'i','Source measurement mantissa (rev1)'],[229,2,'i','Source measurement exponent (rev1)'],
+ [231,2,'i','Source measurement unit (rev1)']
+];
+/* SmartSolo (Dynamic Technologies) writes GPS fixes over the rev1 transduction /
+   source-measurement area as four 6-byte big-endian values = degrees x 1e4 x 65536. */
+const SS_FIELDS=[[207,'Unit GPS latitude'],[213,'Unit GPS longitude'],[219,'Reference GPS latitude'],[225,'Reference GPS longitude']];
+
+/* file colours — receivers are drawn in these, sources always orange */
+const FCOL=['#22d3ee','#a78bfa','#f472b6','#facc15','#38bdf8','#5eead4','#c4b5fd','#94a3b8'];
+
+/* ============================ STATE ============================ */
+/* S.files[] holds one object per loaded file; S.act is the file being viewed
+   in single mode; S.combine puts every file on one shared axis.
+   S.sel is a GLOBAL trace index into the current dataset.                    */
+const S={files:[],act:0,combine:false,sel:0,view:{t0:0,t1:1000},drag:null,dmax:1,drms:1,
+  corr:{on:false},                                  /* vibroseis correlation on/off */
+  gath:{mode:'none',key:'fldr',bin:1,ens:0},        /* sorting */
+  vis:[],vpos:new Map(),ens:[]};                    /* traces on the axis, in order */
+const $=id=>document.getElementById(id);
+const clamp=(v,a,b)=>v<a?a:(v>b?b:v);
+const fmtNum=(v,d=2)=>(Math.abs(v)>=1e6||(Math.abs(v)<1e-3&&v!==0))?v.toExponential(3):v.toFixed(d);
+const has=()=>S.files.length>0;
+
+/* ---------- dataset = the traces currently on the axis ---------- */
+function dsFiles(){ return S.combine?S.files:(S.files[S.act]?[S.files[S.act]]:[]); }
+function nTot(){ let n=0; for(const f of dsFiles()) n+=f.ntr; return n; }
+/* global trace index -> {f, i, fi} */
+function ref(g){
+  const list=dsFiles(); if(!list.length) return null;
+  let k=clamp(g|0,0,nTot()-1);
+  for(const f of list){ if(k<f.ntr) return {f,i:k,fi:S.files.indexOf(f)}; k-=f.ntr; }
+  const f=list[list.length-1]; return {f,i:f.ntr-1,fi:S.files.indexOf(f)};
+}
+/* file index + local trace -> global index */
+function gIdx(fi,i){
+  if(!S.combine) return i;
+  let s=0; for(let j=0;j<fi;j++) s+=S.files[j].ntr; return s+i;
+}
+function hdrFile(){ const r=ref(S.sel); return r?r.f:S.files[S.act]; }
+function dsBounds(){
+  let a=Infinity,b=-Infinity;
+  for(const f of dsFiles()){ a=Math.min(a,eTstart(f)); b=Math.max(b,eTstart(f)+(eNS(f)-1)*eDT(f)/1000); }
+  return Number.isFinite(a)?[a,b]:[0,1000];
+}
+
+/* ============================ READERS ============================ */
+function rd(f,o,size,signed){
+  const dv=f.dv,le=f.little;
+  if(size===2) return signed?dv.getInt16(o,le):dv.getUint16(o,le);
+  if(size===4) return signed?dv.getInt32(o,le):dv.getUint32(o,le);
+  if(size===1) return signed?dv.getInt8(o):dv.getUint8(o);
+  return 0;
+}
+/* 48-bit big-endian unsigned */
+function rd48(f,o){ return f.dv.getUint16(o,false)*4294967296 + f.dv.getUint32(o+2,false); }
+function ibmToFloat(u){
+  if(u===0) return 0;
+  const sgn=(u>>>31)?-1:1, exp=(u>>>24)&0x7f, man=u&0x00ffffff;
+  return sgn*man*Math.pow(16,exp-64)/16777216;
+}
+function sampleReader(fmt,le){
+  switch(fmt){
+    case 1: return (dv,o)=>ibmToFloat(dv.getUint32(o,false));
+    case 2: return (dv,o)=>dv.getInt32(o,le);
+    case 3: return (dv,o)=>dv.getInt16(o,le);
+    case 4: return (dv,o)=>{ const g=dv.getInt16(o,le), m=dv.getInt16(o+2,le); return m*Math.pow(2,g); };
+    case 5: return (dv,o)=>dv.getFloat32(o,le);
+    case 6: return (dv,o)=>dv.getFloat64(o,le);
+    case 7: return (dv,o)=>{const a=dv.getUint8(o),b=dv.getUint8(o+1),c=dv.getUint8(o+2);
+              let v=le?(c<<16|b<<8|a):(a<<16|b<<8|c); if(v&0x800000) v-=0x1000000; return v;};
+    case 8: return (dv,o)=>dv.getInt8(o);
+    case 9: return (dv,o)=>Number(dv.getBigInt64(o,le));
+    case 10:return (dv,o)=>dv.getUint32(o,le);
+    case 11:return (dv,o)=>dv.getUint16(o,le);
+    case 12:return (dv,o)=>Number(dv.getBigUint64(o,le));
+    case 15:return (dv,o)=>{const a=dv.getUint8(o),b=dv.getUint8(o+1),c=dv.getUint8(o+2);
+              return le?(c<<16|b<<8|a):(a<<16|b<<8|c);};
+    case 16:return (dv,o)=>dv.getUint8(o);
+    default:return (dv,o)=>dv.getFloat32(o,le);
+  }
+}
+function thOff(f,tr){ return f.dataStart + tr*f.tlen; }
+function th(f,tr,byte1,size,signed=true){ return rd(f,thOff(f,tr)+byte1-1,size,signed); }
+function ssLL(f,tr,byte1){
+  const v=rd48(f,thOff(f,tr)+byte1-1);
+  return v>=140737488355328?(v-281474976710656)/655360000:v/655360000;
+}
+function getTrace(f,i){
+  if(f.cache.has(i)) return f.cache.get(i);
+  const n=f.ns, out=new Float32Array(n), read=f.read;
+  let o=thOff(f,i)+240;
+  for(let k=0;k<n;k++,o+=f.bps) out[k]=read(f.dv,o);
+  if(f.cache.size>400) f.cache.clear();
+  f.cache.set(i,out);
+  return out;
+}
+function getDisplayTrace(f,i){
+  if(!$('agc').checked) return procTrace(f,i);
+  const win=Math.max(1,Math.round(+$('agcWin').value*1000/eDT(f)));
+  const key=i+'|'+win+'|'+procKey();
+  if(f.agcCache.has(key)) return f.agcCache.get(key);
+  const d=procTrace(f,i),n=d.length,cs=new Float64Array(n+1),out=new Float32Array(n);
+  for(let k=0;k<n;k++) cs[k+1]=cs[k]+d[k]*d[k];
+  const h=win>>1;
+  for(let k=0;k<n;k++){
+    const a=Math.max(0,k-h),b=Math.min(n,k+h+1);
+    const rms=Math.sqrt((cs[b]-cs[a])/(b-a));
+    out[k]=rms>1e-30?d[k]/rms:0;
+  }
+  if(f.agcCache.size>200) f.agcCache.clear();
+  f.agcCache.set(key,out);
+  return out;
+}
+function clearAgc(){ for(const f of S.files) f.agcCache.clear(); }
+
+/* ============================ PARSE ============================ */
+const isAlnum=c=>(c>=48&&c<=57)||(c>=65&&c<=90)||(c>=97&&c<=122);
+function detectText(bytes){
+  let asc=0,ebc=0;
+  for(let i=0;i<3200;i++){
+    const b=bytes[i];
+    if(isAlnum(b)) asc++;
+    if(isAlnum(EBCDIC[b])) ebc++;
+  }
+  return ebc>asc?'ebcdic':'ascii';
+}
+function decodeText(bytes,enc){
+  let s='';
+  for(let i=0;i<3200;i++){
+    let c=enc==='ebcdic'?EBCDIC[bytes[i]]:bytes[i];
+    if(c<32||c>126) c=32;
+    s+=String.fromCharCode(c);
+  }
+  return s;
+}
+function cardImage(s){
+  let o='';
+  for(let i=0;i<40;i++) o+=s.substr(i*80,80).replace(/\s+$/,'')+'\n';
+  return o;
+}
+/* Parse one file into a self-contained object. Returns {f} or {err}. */
+/* ============================================================================
+   SmartSolo SEG-D 8058 -> SEG-Y conversion (SoloLite manual, appendices 1-3)
+   Rev 1.0 / 2.1, format 8058 = 32-bit IEEE demultiplexed, big endian.
+   File = General Headers (1 + n extra, 32 B each) + 16 channel-set blocks
+        + Extended Header (32x32 B) + External Header (32x32 B)
+        + traces (20 B demux header + 7x32 B extensions + ns x 4 B IEEE).
+   ==========================================================================*/
+function segdLooks(u8){ return u8.length>2656 && u8[2]===0x80 && u8[3]===0x58; }
+function convertSegd(buf,name){
+  const u8=new Uint8Array(buf), dv=new DataView(buf);
+  const bcd=(o,n)=>{ let v=0; for(let k=0;k<n;k++){ v=v*100+((u8[o+k]>>4)*10)+(u8[o+k]&15); } return v; };
+  const b16=o=>dv.getUint16(o,false), i32=o=>dv.getInt32(o,false), b32=o=>dv.getUint32(o,false);
+  const b24=o=>(u8[o]<<16)|(u8[o+1]<<8)|u8[o+2];
+  try{
+    /* ---- General Header #1 ---- */
+    const addBlocks=u8[11]>>4;                       /* usually 2 -> GH1..GH3 */
+    const gather=u8[23]&0x0F;                        /* 0 SG, 1 RG, 2 CG */
+    const baseScan=u8[22];                           /* 1/16 ms units */
+    const chanSets=bcd(28,1)||16, skew=bcd(29,1)||0;
+    const extLen=bcd(30,1)||32, extlLen=bcd(31,1)||32;
+    let off=32*(1+addBlocks);
+    /* GH#2: SEG-D revision + extended record length; GH#3: source point */
+    const gh2=32, gh3=64;
+    const rev=addBlocks>=1?(u8[gh2+10]+u8[gh2+11]/10):1.0;
+    let srcLine=0, srcPt=0;
+    if(addBlocks>=2){ srcLine=b24(gh3+3); srcPt=b24(gh3+8); }
+    /* ---- channel sets (skipped, but sanity-read set 1) ---- */
+    off+=chanSets*32+skew*32;
+    /* ---- Extended Header ---- */
+    const xh=off;
+    const rateUs=b32(xh+4)||Math.round(baseScan/16*1000)||1000;
+    const totTr=b32(xh+8), nsH=b32(xh+12), srcTypeE=b32(xh+32), gatherE=b16(xh+36);
+    off+=extLen*32;
+    /* ---- External Header ---- */
+    const eh=off;
+    const ffidF=b32(eh+0);
+    const fE=i32(eh+8), fN=i32(eh+12), fEl=i32(eh+16);              /* cm */
+    const fLatI=i32(eh+20), fLatF=b16(eh+24), fLonI=i32(eh+26), fLonF=b16(eh+30);
+    off+=extlLen*32;
+    const g=gatherE||gather;                                        /* trust extended if set */
+    /* DDMMSS.sss -> decimal degrees */
+    const dms=(vI,vF)=>{ if(!vI&&!vF) return 0;
+      const sg=vI<0?-1:1, a=Math.abs(vI);
+      return sg*(Math.floor(a/10000)+Math.floor(a%10000/100)/60+(a%100+vF/65535)/3600); };
+    /* ---- walk the traces ---- */
+    const trs=[];
+    while(off+244<=u8.length){
+      const e1=off+20, e2=off+52, e3=off+84, e4=off+116, e6=off+180;
+      const ns=b24(e1+7)||nsH;
+      if(!ns||off+244+ns*4>u8.length) break;
+      trs.push({
+        off, ns,
+        trNo:bcd(off+4,2)||b32(e2+28),
+        ffid:b32(e2+10)||ffidF,
+        chan:u8[e6+5]||0, serial:b32(e6+1),
+        rE:i32(e3+0), rN:i32(e3+4), rEl:i32(e3+8),
+        sE:i32(e3+12)||fE, sN:i32(e3+16)||fN, sEl:i32(e3+20)||fEl,
+        rLat:dms(i32(e4+0),b16(e4+4)), rLon:dms(i32(e4+6),b16(e4+10)),
+      });
+      off+=244+ns*4;
+      if(totTr&&trs.length>=totTr) break;
+    }
+    if(!trs.length) return {err:name+': recognised the SEG-D headers but found no complete traces.'};
+    const ns=Math.max(...trs.map(t=>t.ns)), vary=trs.some(t=>t.ns!==ns);
+    const fLat=dms(fLatI,fLatF), fLon=dms(fLonI,fLonF);
+    /* ---- build the SEG-Y ---- */
+    const out=new ArrayBuffer(3600+trs.length*(240+ns*4));
+    const odv=new DataView(out), ou8=new Uint8Array(out);
+    const gname=['SHOT GATHER (SG)','RECEIVER GATHER (RG)','CONTINUOUS RECEIVER GATHER (CG)'][g]||('TYPE '+g);
+    const lines=['C01 CONVERTED FROM SMARTSOLO SEG-D 8058: '+name.slice(0,36),
+      'C02 SEG-D REVISION '+rev.toFixed(1)+'   GATHER TYPE: '+gname,
+      'C03 TRACES: '+trs.length+'   SAMPLES: '+ns+'   INTERVAL: '+(rateUs/1000)+' MS',
+      'C04 FFID '+(trs[0].ffid||ffidF)+'   SOURCE LINE '+srcLine+'   SOURCE POINT '+srcPt,
+      'C05 SOURCE TYPE (SEG-D): '+(srcTypeE===1?'IMPULSIVE':srcTypeE===0?'NOT SET':srcTypeE),
+      vary?'C06 VARIABLE TRACE LENGTHS — SHORT TRACES ZERO-PADDED TO '+ns:'C06',
+      'C07 COORDINATES IN CENTIMETRES, SCALAR -100 APPLIES (VALUES/100 = METRES)',
+      'C08 GPS POSITIONS CARRIED IN SMARTSOLO TRACE-HEADER FIELDS 207-230',
+      'C09 CONVERTED BY SEG-Y WIGGLE VIEWER V2.2'];
+    for(let i=0;i<40;i++){ const t=(lines[i]||'').padEnd(80,' ');
+      for(let c=0;c<80;c++) ou8[i*80+c]=asc2e(t[c]); }
+    odv.setInt32(3204,srcLine); odv.setInt16(3212,trs.length);
+    odv.setUint16(3216,rateUs); odv.setUint16(3218,rateUs);
+    odv.setUint16(3220,ns); odv.setUint16(3222,ns);
+    odv.setInt16(3224,5); odv.setInt16(3228,1);
+    odv.setUint16(3500,0x0100); odv.setInt16(3502,vary?0:1);
+    const wr48=(o,deg)=>{ let r=Math.round(deg*655360000); if(r<0) r+=2**48;
+      for(let k=5;k>=0;k--){ ou8[o+k]=r%256; r=Math.floor(r/256); } };
+    trs.forEach((t,k)=>{
+      const o=3600+k*(240+ns*4);
+      odv.setInt32(o+0,k+1); odv.setInt32(o+4,k+1);
+      odv.setInt32(o+8,t.ffid); odv.setInt32(o+12,t.trNo||t.chan||k+1);
+      odv.setInt32(o+16,srcPt); odv.setInt16(o+28,1);
+      /* RG: the file-level "source" fields hold receiver info and the per-trace
+         "receiver" fields hold the source — swap them back to standard meaning */
+      const rg=g===1;
+      const RX=rg?t.sE:t.rE, RY=rg?t.sN:t.rN, REl=rg?t.sEl:t.rEl;
+      const SX=rg?t.rE:t.sE, SY=rg?t.rN:t.sN, SEl=rg?t.rEl:t.sEl;
+      odv.setInt32(o+40,REl); odv.setInt32(o+44,SEl);
+      odv.setInt16(o+68,-100); odv.setInt16(o+70,-100);
+      odv.setInt32(o+72,SX); odv.setInt32(o+76,SY);
+      odv.setInt32(o+80,RX); odv.setInt32(o+84,RY);
+      odv.setInt16(o+88,1);
+      odv.setUint16(o+114,t.ns); odv.setUint16(o+116,rateUs);
+      odv.setInt32(o+170,t.serial);
+      wr48(o+206,rg?fLat:t.rLat); wr48(o+212,rg?fLon:t.rLon);   /* receiver GPS */
+      wr48(o+218,rg?t.rLat:fLat); wr48(o+224,rg?t.rLon:fLon);   /* source GPS  */
+      for(let j=0;j<t.ns;j++) odv.setFloat32(o+240+j*4,dv.getFloat32(t.off+244+j*4,false));
+    });
+    return {buf:out,
+      note:'Converted from SmartSolo SEG-D 8058 rev '+rev.toFixed(1)+' — '+gname.toLowerCase()+
+           (vary?'; variable trace lengths zero-padded to '+ns+' samples':''),
+      gtag:['SG','RG','CG'][g]||('G'+g)};
+  }catch(e){ return {err:name+': SEG-D conversion failed — '+e.message}; }
+}
+
+function parseFile(buf,name){
+  const notes=[];
+  /* SmartSolo SEG-D? convert it to SEG-Y in memory and carry on */
+  let segd=null;
+  if(segdLooks(new Uint8Array(buf))||/\.se?gd$/i.test(name)){
+    const c=convertSegd(buf,name);
+    if(c.err) return {err:c.err};
+    if(c.buf){ buf=c.buf; segd=c; notes.push(c.note); }
+  }
+  if(buf.byteLength<3600) return {err:name+': only '+buf.byteLength+' bytes — too short to hold a SEG-Y reel header.'};
+  const f={name,buf,dv:new DataView(buf),u8:new Uint8Array(buf),little:false,
+           cache:new Map(),agcCache:new Map(),pcache:new Map(),pkey:'',notes};
+
+  /* endianness: try big first, fall back to little if the format code is nonsense */
+  let fmt=f.dv.getInt16(3200+24,false);
+  if(!FMT[fmt]){ const f2=f.dv.getInt16(3200+24,true); if(FMT[f2]){ f.little=true; fmt=f2; } }
+  if(!FMT[fmt]){ notes.push('Format code '+f.dv.getInt16(3224,false)+' is not valid — assuming IEEE float.'); fmt=5; }
+  f.fmt=fmt; f.bps=FMT[fmt][1]; f.read=sampleReader(fmt,f.little);
+
+  f.enc=$('encSel').value==='auto'?detectText(f.u8):$('encSel').value;
+  f.txt=decodeText(f.u8,f.enc);
+  f.smartsolo=/smartsolo|dynamic technologies/i.test(f.txt);
+
+  f.bin={};
+  for(const b of BIN_FIELDS) f.bin[b[0]]=rd(f,3200+b[0]-3201,b[1],b[2]==='i');
+  f.rev=f.bin[3501]||0;
+  f.extN=Math.max(0,f.bin[3505]||0);
+  f.dataStart=3600+3200*f.extN;
+  f.ext=[];
+  for(let e=0;e<f.extN&&3600+3200*(e+1)<=buf.byteLength;e++)
+    f.ext.push(decodeText(f.u8.subarray(3600+3200*e,3600+3200*(e+1)),f.enc));
+
+  f.ns=f.bin[3221]||0; f.dt=f.bin[3217]||1000;
+  if(!f.ns||f.dataStart+240>buf.byteLength) f.ns=0;
+  /* trust the first trace header if the reel header disagrees with the file size */
+  const nsTr=buf.byteLength>f.dataStart+240?rd(f,f.dataStart+114,2,false):0;
+  const fits=n=>n>0&&(buf.byteLength-f.dataStart)%(240+n*f.bps)===0;
+  if(!fits(f.ns)&&fits(nsTr)){ notes.push('Reel header says '+f.ns+' samples; using '+nsTr+' from the trace headers.'); f.ns=nsTr; }
+  if(!f.ns&&nsTr) f.ns=nsTr;
+  /* records longer than 65535 samples wrap the 16-bit ns fields (e.g. 120001
+     samples at 4 kHz). Recover the true count from the file size. */
+  if(!fits(f.ns)){
+    let fixed=0;
+    const ntrH=rd(f,3212,2,false);
+    if(ntrH>0&&(buf.byteLength-f.dataStart)%ntrH===0){
+      const cand=((buf.byteLength-f.dataStart)/ntrH-240)/f.bps;
+      if(Number.isInteger(cand)&&cand>0&&fits(cand)) fixed=cand;
+    }
+    if(!fixed) for(let k=1;k<=8&&!fixed;k++){
+      if(fits(f.ns+65536*k)) fixed=f.ns+65536*k;
+      else if(nsTr&&fits(nsTr+65536*k)) fixed=nsTr+65536*k;
+    }
+    if(fixed){ notes.push('Wrapped 16-bit sample count: header says '+f.ns+', file layout says '+fixed+' samples per trace — using '+fixed+'.'); f.ns=fixed; }
+  }
+  if(!f.ns) return {err:name+': could not determine the number of samples per trace.'};
+  const dtTr=rd(f,f.dataStart+116,2,false); if(!f.dt&&dtTr) f.dt=dtTr;
+  if(!f.dt) f.dt=1000;
+
+  f.tlen=240+f.ns*f.bps;
+  f.ntr=Math.floor((buf.byteLength-f.dataStart)/f.tlen);
+  if(f.ntr<1) return {err:name+': no complete traces found after the reel header.'};
+  const rem=(buf.byteLength-f.dataStart)%f.tlen;
+  if(rem) notes.push(rem+' trailing bytes ignored (variable-length traces are not supported).');
+
+  if(segd){ f.segd=true; f.segdG=segd.gtag; }
+  f.tstart=th(f,0,109,2,true)||0;
+  /* a recorder that wrote sweep parameters was almost certainly vibrating */
+  f.srcType=(f.bin[3233]||f.bin[3235]||f.bin[3237])?'vib':'imp';
+  scanStats(f);
+  f.pmax=f.gmax; f.prms=f.grms;
+  return {f};
+}
+function scanStats(f){
+  let mx=0,ss=0,cnt=0,dead=0;
+  const step=Math.max(1,Math.floor(f.ntr/120)), sdec=Math.max(1,Math.floor(f.ns/1500));
+  for(let i=0;i<f.ntr;i+=step){
+    const d=getTrace(f,i); let tm=0;
+    for(let k=0;k<f.ns;k+=sdec){ const v=Math.abs(d[k]); if(v>tm) tm=v; ss+=d[k]*d[k]; cnt++; }
+    if(tm>mx) mx=tm;
+  }
+  for(let i=0;i<f.ntr;i++){ const d=getTrace(f,i); let z=true;
+    for(let k=0;k<f.ns;k++) if(d[k]!==0){z=false;break;} if(z) dead++; }
+  f.gmax=mx||1; f.grms=Math.sqrt(ss/Math.max(1,cnt))||1; f.dead=dead;
+}
+function dsStats(){
+  let mx=0,rs=0,n=0;
+  for(const f of dsFiles()){ mx=Math.max(mx,f.pmax||f.gmax); rs+=(f.prms||f.grms)**2*f.ntr; n+=f.ntr; }
+  S.dmax=mx||1; S.drms=Math.sqrt(rs/Math.max(1,n))||1;
+}
+
+/* ============================ FILE MANAGEMENT ============================ */
+function addBuffer(buf,name){
+  const r=parseFile(buf,name);
+  if(r.err){ fail(r.err); return null; }
+  r.f.color=FCOL[S.files.length%FCOL.length];
+  S.files.push(r.f);
+  if(r.f.notes.length) msg(name+': '+r.f.notes.join(' '));
+  return r.f;
+}
+/* legacy single-file entry point: replaces everything */
+function loadBuffer(buf,name){
+  S.files=[]; S.act=0; S.sel=0;
+  const f=addBuffer(buf,name);
+  if(!f) return false;
+  activate(0,true);
+  return true;
+}
+async function addFiles(list){
+  const files=[...list].filter(f=>f&&f.size);
+  if(!files.length) return;
+  const before=S.files.length;
+  for(const file of files){
+    msg('Reading '+file.name+' …');
+    try{ addBuffer(await file.arrayBuffer(),file.name); }
+    catch(e){ fail(file.name+': '+e); }
+  }
+  if(S.files.length===before) return;
+  activate(before,true);
+  msg(S.files.length+' file'+(S.files.length>1?'s':'')+' loaded — '+nTot()+' traces on the axis.');
+}
+function removeFile(fi){
+  S.files.splice(fi,1);
+  S.files.forEach((f,j)=>f.color=FCOL[j%FCOL.length]);
+  if(!S.files.length){ $('drop').classList.remove('hide'); $('chips').innerHTML='<span class="chip">NO FILE LOADED</span>';
+    S.act=0; S.sel=0; renderFileList(); draw(); return; }
+  activate(clamp(fi,0,S.files.length-1),true);
+}
+function clearFiles(){ S.files=[]; S.act=0; S.sel=0; $('drop').classList.remove('hide');
+  $('chips').innerHTML='<span class="chip">NO FILE LOADED</span>'; renderFileList(); draw(); msg('Cleared.'); }
+
+/* Make file fi current, refit the axis and redraw everything. */
+function activate(fi,refit){
+  S.act=clamp(fi,0,S.files.length-1);
+  S.sel=S.combine?gIdx(S.act,0):0;
+  const f=S.files[S.act];
+  restat(); buildVis();
+  if(refit){
+    const [a,b]=dsBounds(); S.view.t0=a; S.view.t1=b;
+    $('t0').value=a.toFixed(0); $('t1').value=b.toFixed(0);
+    $('trFirst').value=1; $('trCount').value=Math.min(nVis(),64); $('trStep').value=1;
+  }
+  $('trFirst').max=nVis(); $('trCount').max=nVis(); $('trcSel').max=nVis(); $('trcSel').value=visPos(S.sel)+1;
+  $('drop').classList.add('hide');
+  renderFileList(); buildChips(); renderText(); renderBin(); renderTrc(); renderTable();
+  buildCoordSources(); vibHint(); draw(); drawMap();
+}
+function renderFileList(){
+  const ul=$('fileList');
+  ul.innerHTML=S.files.map((f,j)=>
+    '<li data-i="'+j+'" class="'+(j===S.act&&!S.combine?'act ':'')+(f.dead===f.ntr?'dead':'')+'">'+
+      '<span class="sw" style="background:'+f.color+'"></span>'+
+      '<span class="fn" title="'+f.name+'">'+f.name+'</span>'+
+      '<span class="fm">'+f.ntr+'×'+f.ns+'</span>'+
+      '<button class="st'+(isVib(f)?' vib':'')+'" data-s="'+j+'" title="'+(isVib(f)?'Vibroseis — click for impulsive':'Impulsive / hammer — click for vibroseis')+'">'+(isVib(f)?'V':'H')+'</button>'+
+      '<button class="x" data-x="'+j+'" title="Remove">×</button>'+
+    '</li>').join('');
+  $('fileTag').textContent=S.files.length?S.files.length+' loaded':'';
+  $('fileHint').textContent=S.combine
+    ? 'Combined: '+nTot()+' traces from '+S.files.length+' file'+(S.files.length>1?'s':'')+' on one axis.'
+    : 'Click a file to view it, or tick Combine to put them all on one axis.';
+}
+function fail(t){ msg(t); alert('SEG-Y read error\n\n'+t); return false; }
+function msg(t){ $('stMsg').textContent=t; }
+
+/* ---------- chips ---------- */
+function buildChips(){
+  const f=hdrFile(); if(!f) return;
+  const c=[];
+  const secs=(f.ns-1)*f.dt/1e6;
+  if(S.combine) c.push(['<b>'+S.files.length+' files combined</b> · '+nTot()+' traces','ok']);
+  c.push(['<b>'+f.name+'</b>','']);
+  c.push([f.ntr+' traces × '+f.ns+' samples','']);
+  c.push([(f.dt/1000)+' ms · '+(secs>=1?secs.toFixed(3)+' s':(secs*1000).toFixed(0)+' ms'),'']);
+  c.push([FMT[f.fmt][0]+(f.little?' · LE':''),'']);
+  c.push(['rev '+(f.rev>>8)+'.'+(f.rev&255),'']);
+  c.push([SORT[f.bin[3229]]||('sort '+f.bin[3229]),'']);
+  if(f.smartsolo) c.push(['SmartSolo','ok']);
+  if(f.segd) c.push(['SEG-D '+f.segdG+' → SEG-Y','ok']);
+  if(swPar().rsOn) c.push(['resampled to '+swPar().rsDt+' ms','ok']);
+  if(isVib(f)) c.push(corrOn(f)?['correlated · '+(eNS(f)-1)*eDT(f)/1000+' ms listen','ok']:['vibroseis · uncorrelated','warn']);
+  if(S.gath.mode!=='none'&&S.ens.length)
+    c.push([{shot:'shot',rcv:'receiver',off:'offset'}[S.gath.mode]+' gather '+(S.gath.ens+1)+'/'+S.ens.length+' · '+S.vis.length+' tr','ok']);
+  if(f.dead===f.ntr) c.push(['ALL '+f.ntr+' TRACES ARE ZERO','bad']);
+  else if(f.dead) c.push([f.dead+' dead trace'+(f.dead>1?'s':''),'warn']);
+  if(S.combine){
+    const mixed=S.files.some(x=>x.dt!==S.files[0].dt||x.ns!==S.files[0].ns);
+    if(mixed) c.push(['mixed rates — shared time axis','warn']);
+  }
+  $('chips').innerHTML=c.map(x=>'<span class="chip '+x[1]+'">'+x[0]+'</span>').join('');
+}
+
+/* ============================ WIGGLE ============================ */
+const cv=$('wig'), cx=cv.getContext('2d');
+const M={l:58,t:30,r:14,b:20};
+let LAY=null, curMode='wigva';
+
+function dispTraces(){
+  const V=S.vis, N=V.length; if(!N) return [];
+  const first=clamp((+$('trFirst').value|0)-1,0,N-1);
+  const step=Math.max(1,+$('trStep').value|0);
+  const count=Math.max(1,+$('trCount').value|0);
+  const idx=[];
+  for(let i=first,k=0;i<N&&k<count;i+=step,k++) idx.push(V[i]);   /* global trace indices */
+  return idx;
+}
+function normFactor(f,d,i0,i1){
+  const mode=$('norm').value;
+  if(mode==='none') return 1;
+  if(mode==='fmax') return 1/(S.combine?S.dmax:(f.pmax||f.gmax));
+  if(mode==='frms') return 1/(3*(S.combine?S.drms:(f.prms||f.grms)));
+  let mx=0,ss=0,n=0;
+  for(let k=i0;k<=i1;k++){ const v=d[k]; const a=v<0?-v:v; if(a>mx) mx=a; ss+=v*v; n++; }
+  if(mode==='trms'){ const r=Math.sqrt(ss/Math.max(1,n)); return r>1e-30?1/(3*r):0; }
+  return mx>1e-30?1/mx:0;
+}
+function niceStep(range,target){
+  const raw=range/target, p=Math.pow(10,Math.floor(Math.log10(raw))), n=raw/p;
+  return (n<1.5?1:n<3?2:n<7?5:10)*p;
+}
+function resize(){
+  const w=cv.clientWidth,h=cv.clientHeight,dpr=Math.min(2,window.devicePixelRatio||1);
+  if(cv.width!==Math.round(w*dpr)||cv.height!==Math.round(h*dpr)){
+    cv.width=Math.round(w*dpr); cv.height=Math.round(h*dpr);
+  }
+  cx.setTransform(dpr,0,0,dpr,0,0);
+  return {w,h};
+}
+function draw(){
+  const {w,h}=resize();
+  cx.clearRect(0,0,w,h);
+  cx.fillStyle='#050809'; cx.fillRect(0,0,w,h);
+  if(!has()) return;
+  const pw=w-M.l-M.r, ph=h-M.t-M.b;
+  if(pw<40||ph<40) return;
+  const idx=dispTraces(); if(!idx.length) return;
+  const n=idx.length, sp=pw/n;
+  const t0=S.view.t0,t1=S.view.t1, span=Math.max(1e-6,t1-t0);
+  const gain=Math.pow(10,+$('gain').value);
+  const clip=+$('clip').value, mode=curMode, pol=$('polarity').checked?-1:1;
+  const y=t=>M.t+(t-t0)/span*ph;
+  LAY={idx,sp,pw,ph,t0,t1};
+
+  cx.save(); cx.beginPath(); cx.rect(M.l,M.t,pw,ph); cx.clip();
+  if(mode==='vd') drawVD(idx,pw,ph,gain,clip,pol,y);
+
+  const tstep=niceStep(span,Math.max(4,Math.round(ph/58)));
+  if($('grid').checked){
+    cx.strokeStyle='rgba(34,211,238,.10)'; cx.lineWidth=1;
+    for(let t=Math.ceil(t0/tstep)*tstep;t<=t1;t+=tstep){
+      const yy=Math.round(y(t))+.5; cx.beginPath(); cx.moveTo(M.l,yy); cx.lineTo(M.l+pw,yy); cx.stroke();
+    }
+    if(sp>14){ cx.strokeStyle='rgba(34,211,238,.06)';
+      for(let k=0;k<n;k++){ const xx=Math.round(M.l+(k+.5)*sp)+.5; cx.beginPath(); cx.moveTo(xx,M.t); cx.lineTo(xx,M.t+ph); cx.stroke(); }
+    }
+  }
+  /* file boundaries in combined mode */
+  if(S.combine&&sp>2&&S.gath.mode==='none'){
+    cx.strokeStyle='rgba(255,159,28,.5)'; cx.setLineDash([4,4]); cx.lineWidth=1;
+    for(let k=1;k<n;k++){
+      if(ref(idx[k]).fi!==ref(idx[k-1]).fi){
+        const xx=Math.round(M.l+k*sp)+.5; cx.beginPath(); cx.moveTo(xx,M.t); cx.lineTo(xx,M.t+ph); cx.stroke();
+      }
+    }
+    cx.setLineDash([]);
+  }
+
+  let sppMax=0;
+  if(mode!=='vd'){
+    const fill=mode==='wigva'||mode==='va', line=mode==='wigva'||mode==='wig';
+    const neg=$('negFill').checked;
+    for(let k=0;k<n;k++){
+      const r=ref(idx[k]); if(!r) continue;
+      const f=r.f, dtms=eDT(f)/1000, ns=eNS(f), ts=eTstart(f);
+      const s0=clamp(Math.floor((t0-ts)/dtms),0,ns-1);
+      const s1=clamp(Math.ceil((t1-ts)/dtms),0,ns-1);
+      const tA=ts+s0*dtms, tB=ts+s1*dtms;
+      if(tB<t0||tA>t1) continue;                     /* this file has no data in view */
+      const d=getDisplayTrace(f,r.i), xc=M.l+(k+.5)*sp;
+      const nf=normFactor(f,d,s0,s1)*gain*pol, half=sp;
+      const sel=idx[k]===S.sel;
+      const xa=v=>{ let a=v*nf; if(a>clip)a=clip; else if(a<-clip)a=-clip; return xc+a*half; };
+      const rows=Math.abs(y(tB)-y(tA));
+      const spp=(s1-s0+1)/Math.max(1,rows); if(spp>sppMax) sppMax=spp;
+      const pts=spp>1.2?envelope(f,d,s0,s1,xa,y):direct(f,d,s0,s1,xa,y);
+      if(fill){
+        cx.save(); cx.beginPath(); cx.rect(xc,M.t,Math.max(0,M.l+pw-xc),ph); cx.clip();
+        cx.beginPath(); cx.moveTo(xc,pts.up[1]);
+        for(let j=0;j<pts.up.length;j+=2) cx.lineTo(pts.up[j],pts.up[j+1]);
+        cx.lineTo(xc,pts.up[pts.up.length-1]); cx.closePath();
+        cx.fillStyle=sel?'rgba(74,222,128,.85)':'rgba(180,214,232,.85)'; cx.fill(); cx.restore();
+        if(neg){
+          cx.save(); cx.beginPath(); cx.rect(M.l,M.t,Math.max(0,xc-M.l),ph); cx.clip();
+          cx.beginPath(); cx.moveTo(xc,pts.dn[1]);
+          for(let j=0;j<pts.dn.length;j+=2) cx.lineTo(pts.dn[j],pts.dn[j+1]);
+          cx.lineTo(xc,pts.dn[pts.dn.length-1]); cx.closePath();
+          cx.fillStyle='rgba(255,77,94,.55)'; cx.fill(); cx.restore();
+        }
+      }
+      if(line){
+        cx.beginPath();
+        for(let j=0;j<pts.up.length;j+=2) j===0?cx.moveTo(pts.up[0],pts.up[1]):cx.lineTo(pts.up[j],pts.up[j+1]);
+        if(pts.dn!==pts.up) for(let j=pts.dn.length-2;j>=0;j-=2) cx.lineTo(pts.dn[j],pts.dn[j+1]);
+        cx.lineWidth=sel?1.4:0.8;
+        cx.strokeStyle=sel?'#4ade80':(S.combine?f.color:(fill?'#dff1ff':'#8fd7ea'));
+        cx.stroke();
+      }
+    }
+  }
+  cx.restore();
+  $('stSpp').textContent=sppMax?sppMax.toFixed(2):'—';
+
+  /* ---- axes ---- */
+  cx.strokeStyle='#273a48'; cx.lineWidth=1;
+  cx.strokeRect(M.l+.5,M.t+.5,pw,ph);
+  cx.fillStyle='#7a94a6'; cx.font='10px "Share Tech Mono",monospace'; cx.textAlign='right'; cx.textBaseline='middle';
+  for(let t=Math.ceil(t0/tstep)*tstep;t<=t1;t+=tstep){
+    const yy=y(t); cx.fillText(tstep<1?t.toFixed(2):t.toFixed(0),M.l-6,yy);
+    cx.beginPath(); cx.moveTo(M.l-4,yy+.5); cx.lineTo(M.l,yy+.5); cx.stroke();
+  }
+  cx.save(); cx.translate(13,M.t+ph/2); cx.rotate(-Math.PI/2);
+  cx.textAlign='center'; cx.fillStyle='#4f6474'; cx.fillText('TIME (ms)',0,0); cx.restore();
+  cx.textAlign='center'; cx.textBaseline='bottom';
+  const lstep=Math.max(1,Math.ceil(n/Math.floor(pw/44)));
+  for(let k=0;k<n;k+=lstep){
+    const xx=M.l+(k+.5)*sp;
+    cx.fillStyle=idx[k]===S.sel?'#4ade80':'#7a94a6';
+    cx.fillText(traceLabel(idx[k]),xx,M.t-5);
+  }
+  cx.fillStyle='#4f6474'; cx.textAlign='left';
+  cx.fillText(axisLabel(),M.l,M.t-16);
+  /* file name banners in combined mode */
+  if(S.combine&&S.gath.mode==='none'){
+    cx.textAlign='center';
+    let k0=0;
+    for(let k=1;k<=n;k++){
+      if(k===n||ref(idx[k]).fi!==ref(idx[k0]).fi){
+        const f=ref(idx[k0]).f, xm=M.l+((k0+k)/2)*sp;
+        if((k-k0)*sp>60){ cx.fillStyle=f.color; cx.fillText(f.name.replace(/\.[^.]+$/,''),xm,M.t-16); }
+        k0=k;
+      }
+    }
+  }
+  $('trTag').textContent=idx.length+'/'+nTot();
+}
+/* what the number above each trace means, given the current sort */
+function traceLabel(g){
+  const r=ref(g); if(!r) return '';
+  const m=S.gath.mode;
+  if(m==='shot') return String(th(r.f,r.i,13,4));            /* channel */
+  if(m==='rcv')  return String(th(r.f,r.i,9,4));             /* FFID */
+  if(m==='off')  return String(th(r.f,r.i,9,4));
+  return String((S.combine?r.i:g)+1);
+}
+function axisLabel(){
+  const m=S.gath.mode;
+  return m==='shot'?'CHANNEL':m==='rcv'?'FIELD RECORD (FFID)':m==='off'?'FIELD RECORD (FFID)':
+         (S.combine?'TRACE (within file)':'TRACE');
+}
+function direct(f,d,s0,s1,xa,y){
+  const a=[];
+  for(let k=s0;k<=s1;k++) a.push(xa(d[k]),y(eTstart(f)+k*eDT(f)/1000));
+  return {up:a,dn:a};
+}
+function envelope(f,d,s0,s1,xa,y){
+  const yA=y(eTstart(f)+s0*eDT(f)/1000), yB=y(eTstart(f)+s1*eDT(f)/1000);
+  const p0=Math.min(yA,yB), rows=Math.max(1,Math.round(Math.abs(yB-yA)));
+  const per=(s1-s0+1)/rows, up=[],dn=[];
+  for(let p=0;p<rows;p++){
+    const a=s0+Math.floor(p*per), b=Math.min(s1,s0+Math.floor((p+1)*per)-1);
+    let mn=Infinity,mx=-Infinity;
+    for(let k=a;k<=Math.max(a,b);k++){ const v=d[k]; if(v<mn)mn=v; if(v>mx)mx=v; }
+    const yy=p0+p+.5;
+    up.push(xa(mx),yy); dn.push(xa(mn),yy);
+  }
+  return {up,dn};
+}
+const CMAPS={
+  gray:v=>{const c=Math.round(255*(1-(v+1)/2));return [c,c,c];},
+  seis:v=>{ if(v<0){const t=-v;return [Math.round(255-155*t),Math.round(255-215*t),255];}
+            const t=v;return [255,Math.round(255-215*t),Math.round(255-195*t)];},
+  hot:v=>{const t=(v+1)/2;return [Math.round(255*clamp(t*3,0,1)),Math.round(255*clamp(t*3-1,0,1)),Math.round(255*clamp(t*3-2,0,1))];},
+  cyanorange:v=>{ if(v<0){const t=-v;return [Math.round(12+10*(1-t)),Math.round(20+191*t),Math.round(26+212*t)];}
+            return [Math.round(12+243*v),Math.round(20+139*v),Math.round(26+2*v)];}
+};
+function drawVD(idx,pw,ph,gain,clip,pol,y){
+  const W=Math.max(1,Math.floor(pw)),H=Math.max(1,Math.floor(ph));
+  const img=cx.createImageData(W,H), D=img.data, cm=CMAPS[$('cmap').value]||CMAPS.gray;
+  const n=idx.length, t0=S.view.t0, span=S.view.t1-S.view.t0;
+  const cols=[];
+  for(let k=0;k<n;k++){
+    const r=ref(idx[k]); const col=new Float32Array(H).fill(NaN);
+    if(r){
+      const f=r.f, dtms=eDT(f)/1000, d=getDisplayTrace(f,r.i), ns=eNS(f), ts=eTstart(f);
+      const s0=clamp(Math.floor((t0-ts)/dtms),0,ns-1);
+      const s1=clamp(Math.ceil((S.view.t1-ts)/dtms),0,ns-1);
+      const nf=normFactor(f,d,s0,s1)*gain*pol;
+      for(let p=0;p<H;p++){
+        const ta=t0+(p/H)*span, tb=t0+((p+1)/H)*span;
+        let a=Math.round((ta-ts)/dtms), b=Math.round((tb-ts)/dtms)-1;
+        if(b<a) b=a;
+        if(b<0||a>ns-1) continue;                   /* outside this file's record */
+        a=clamp(a,0,ns-1); b=clamp(b,0,ns-1);
+        let sum=0,c=0; for(let q=a;q<=b;q++){ sum+=d[q]; c++; }
+        col[p]=clamp((sum/Math.max(1,c))*nf/clip,-1,1);
+      }
+    }
+    cols.push(col);
+  }
+  for(let x=0;x<W;x++){
+    const k=clamp(Math.floor(x/pw*n),0,n-1), col=cols[k];
+    for(let p=0;p<H;p++){
+      const o=(p*W+x)*4, v=col[p];
+      if(Number.isNaN(v)){ D[o]=5; D[o+1]=8; D[o+2]=9; D[o+3]=255; continue; }
+      const rgb=cm(v);
+      D[o]=rgb[0]; D[o+1]=rgb[1]; D[o+2]=rgb[2]; D[o+3]=255;
+    }
+  }
+  cx.putImageData(img,M.l,M.t);
+}
+
+/* ============================ HEADER PANES ============================ */
+function renderText(){
+  const f=hdrFile(); if(!f) return;
+  $('txtHdr').textContent=cardImage(f.txt);
+  $('encTag').textContent=f.name+' · '+f.enc.toUpperCase()+($('encSel').value==='auto'?' (detected)':'');
+  $('extHdrs').innerHTML=f.ext.length?('<div class="subhead">Extended textual headers ('+f.ext.length+')</div>'+
+    f.ext.map((t,i)=>'<div class="hint" style="margin:4px 0">#'+(i+1)+'</div><pre class="card">'+cardImage(t).replace(/[<>&]/g,c=>({'<':'&lt;','>':'&gt;','&':'&amp;'}[c]))+'</pre>').join('')):'';
+}
+function meaning(f,v){
+  if(f[4]){ const m=f[4][v]; if(m) return Array.isArray(m)?m[0]:m; return v===0?'':'unknown code'; }
+  return '';
+}
+function renderBin(){
+  const f=hdrFile(); if(!f) return;
+  const tb=$('tblBin').querySelector('tbody'); let h='';
+  for(const b of BIN_FIELDS){
+    const v=f.bin[b[0]];
+    const extra=b[0]===3501?((v>>8)+'.'+(v&255)):meaning(b,v);
+    h+='<tr><td class="b">'+b[0]+'–'+(b[0]+b[1]-1)+'</td><td class="n">'+b[3]+'</td><td class="v">'+v+'</td><td class="e">'+extra+'</td></tr>';
+  }
+  tb.innerHTML=h;
+}
+function renderTrc(){
+  const tb=$('tblTrc').querySelector('tbody');
+  const r=ref(S.sel); if(!r){ tb.innerHTML=''; return; }
+  const f=r.f, i=r.i;
+  let h='';
+  const sco=th(f,i,71,2), sel=th(f,i,69,2);
+  const ap=(v,s)=>s>0?v*s:(s<0?v/(-s):v);
+  for(const fd of TRC_FIELDS){
+    const v=th(f,i,fd[0],fd[1],fd[2]==='i');
+    let extra=meaning(fd,v);
+    if([73,77,81,85].includes(fd[0])&&sco) extra='scaled: '+fmtNum(ap(v,sco),2);
+    if([41,45,49,53,57,61,65].includes(fd[0])&&sel&&v) extra='scaled: '+fmtNum(ap(v,sel),2);
+    if(fd[0]===117) extra=(v/1000)+' ms';
+    if(fd[0]===157){ const dd=th(f,i,159,2),hh=th(f,i,161,2),mm=th(f,i,163,2),ss=th(f,i,165,2);
+      if(v) extra=isoFromDoy(v,dd,hh,mm,ss); }
+    h+='<tr><td class="b">'+fd[0]+'–'+(fd[0]+fd[1]-1)+'</td><td class="n">'+fd[3]+'</td><td class="v">'+v+'</td><td class="e">'+extra+'</td></tr>';
+  }
+  if(f.smartsolo){
+    h+='<tr><td colspan="4" style="background:#0b1218;color:var(--cyan);font-size:9.5px;letter-spacing:1px;padding:4px 5px">SMARTSOLO GPS (VENDOR USE OF BYTES 207–230)</td></tr>';
+    for(const fd of SS_FIELDS){
+      const v=ssLL(f,i,fd[0]);
+      h+='<tr><td class="b">'+fd[0]+'–'+(fd[0]+5)+'</td><td class="n">'+fd[1]+'</td><td class="v">'+(Math.abs(v)>1e-3?v.toFixed(7):'0')+'</td><td class="e">'+(Math.abs(v)>1e-3?'°':'no fix')+'</td></tr>';
+    }
+  }
+  const d=getTrace(f,i); let mx=0,ss2=0;
+  for(let k=0;k<f.ns;k++){const a=Math.abs(d[k]); if(a>mx)mx=a; ss2+=d[k]*d[k];}
+  const rms=Math.sqrt(ss2/f.ns);
+  h+='<tr><td colspan="4" style="background:#0b1218;color:var(--cyan);font-size:9.5px;letter-spacing:1px;padding:4px 5px">SAMPLE STATISTICS</td></tr>'+
+     '<tr><td class="b">—</td><td class="n">Peak |amplitude|</td><td class="v">'+fmtNum(mx,4)+'</td><td class="e">'+(mx===0?'dead trace':'')+'</td></tr>'+
+     '<tr><td class="b">—</td><td class="n">RMS amplitude</td><td class="v">'+fmtNum(rms,4)+'</td><td class="e"></td></tr>';
+  if(corrOn(f)){
+    const pd=procTrace(f,i); let pm=0;
+    for(let k=0;k<pd.length;k++){const a=Math.abs(pd[k]); if(a>pm)pm=a;}
+    const sp=swPar();
+    h+='<tr><td colspan="4" style="background:#0b1218;color:var(--cyan);font-size:9.5px;letter-spacing:1px;padding:4px 5px">AFTER SWEEP CORRELATION</td></tr>'+
+       (sp.src==='pilot'&&S.pilot
+        ?'<tr><td class="b">—</td><td class="n">Pilot trace</td><td class="v">'+S.pilot.name+'</td><td class="e">'+S.pilot.s.length+' samples · '+(S.pilot.dt/1000)+' ms</td></tr>'
+        :'<tr><td class="b">—</td><td class="n">Pilot sweep</td><td class="v">'+sp.f1+'–'+sp.f2+' Hz</td><td class="e">'+(sp.len/1000).toFixed(3)+' s '+(sp.type==='log'?'log':'linear')+', taper '+sp.tapS+'/'+sp.tapE+' ms</td></tr>')+
+       (sp.lag?'<tr><td class="b">—</td><td class="n">Correlation lag</td><td class="v">'+sp.lag+' ms</td><td class="e">output lag axis starts at '+sp.lag+' ms</td></tr>':'')+
+       '<tr><td class="b">—</td><td class="n">Output samples</td><td class="v">'+pd.length+'</td><td class="e">'+((pd.length-1)*eDT(f)/1000).toFixed(1)+' ms '+(sp.out==='full'?'(full record)':'(listen time)')+'</td></tr>'+
+       '<tr><td class="b">—</td><td class="n">Correlated peak</td><td class="v">'+fmtNum(pm,4)+'</td><td class="e"></td></tr>';
+  }
+  tb.innerHTML=h;
+  $('trcSel').value=visPos(S.sel)+1;
+  $('trcTag').textContent='of '+nVis()+' on the axis · '+f.name+' trace '+(i+1);
+  if($('hexDump').checked){
+    const o=thOff(f,i); let s='';
+    for(let row=0;row<15;row++){
+      let hex='',asc='';
+      for(let c=0;c<16;c++){ const b=f.u8[o+row*16+c]; hex+=b.toString(16).padStart(2,'0')+(c===7?'  ':' ');
+        asc+=(b>=32&&b<127)?String.fromCharCode(b):'.'; }
+      s+=String(row*16+1).padStart(3,' ')+' | '+hex+'| '+asc+'\n';
+    }
+    $('trcHex').textContent=s; $('trcHex').style.display='block';
+  } else $('trcHex').style.display='none';
+}
+function isoFromDoy(y,doy,h,m,s){
+  if(!y||!doy) return '';
+  const d=new Date(Date.UTC(y,0,1)); d.setUTCDate(doy);
+  const p=n=>String(n).padStart(2,'0');
+  return d.getUTCFullYear()+'-'+p(d.getUTCMonth()+1)+'-'+p(d.getUTCDate())+' '+p(h)+':'+p(m)+':'+p(s);
+}
+function sc(f,t,b){ const s=th(f,t,71,2),v=th(f,t,b,4); const r=s>0?v*s:(s<0?v/(-s):v); return Number.isInteger(r)?r:r.toFixed(2); }
+const TBL_COLS=[['#',(f,t,g)=>g+1],['file',(f)=>f.name.replace(/\.[^.]+$/,'')],['tracl',(f,t)=>th(f,t,1,4)],
+  ['fldr',(f,t)=>th(f,t,9,4)],['tracf',(f,t)=>th(f,t,13,4)],['ep',(f,t)=>th(f,t,17,4)],['cdp',(f,t)=>th(f,t,21,4)],
+  ['trid',(f,t)=>th(f,t,29,2)],['offset',(f,t)=>th(f,t,37,4)],['sx',(f,t)=>sc(f,t,73)],['sy',(f,t)=>sc(f,t,77)],
+  ['gx',(f,t)=>sc(f,t,81)],['gy',(f,t)=>sc(f,t,85)],['elev',(f,t)=>th(f,t,41,4)],['ns',(f,t)=>th(f,t,115,2,false)],
+  ['dt µs',(f,t)=>th(f,t,117,2,false)],['delay',(f,t)=>th(f,t,109,2)],
+  ['offset',(f,t)=>fmtNum(offsetOf(f,t),1)],
+  ['peak',(f,t)=>{const d=procTrace(f,t);let m=0;for(let k=0;k<d.length;k++){const a=Math.abs(d[k]);if(a>m)m=a;}return fmtNum(m,3);}]];
+function renderTable(){
+  const cols=TBL_COLS.filter(c=>c[0]!=='file'||S.combine);
+  const th_=$('tblTraces').querySelector('thead'), tb=$('tblTraces').querySelector('tbody');
+  th_.innerHTML='<tr>'+cols.map(c=>'<th>'+c[0]+'</th>').join('')+'</tr>';
+  const N=nVis(), cap=Math.min(N,3000);
+  let h='';
+  for(let p=0;p<cap;p++){
+    const g=S.vis[p], r=ref(g);
+    h+='<tr data-i="'+g+'"'+(g===S.sel?' class="sel"':'')+'>'+cols.map(c=>'<td>'+c[1](r.f,r.i,p)+'</td>').join('')+'</tr>';
+  }
+  tb.innerHTML=h;
+  if(cap<N) msg('Trace table shows the first 3000 of '+N+' traces; CSV export includes all.');
+  tb.onclick=e=>{ const row=e.target.closest('tr'); if(!row) return; select(+row.dataset.i,true); };
+}
+function select(g,centre){
+  if(!nVis()) return;
+  S.sel=S.vpos.has(g)?g:S.vis[0];
+  if(centre){
+    const idx=dispTraces();
+    if(!idx.includes(S.sel)){
+      const cnt=+$('trCount').value|0, st=Math.max(1,+$('trStep').value|0);
+      $('trFirst').value=clamp(visPos(S.sel)-Math.floor(cnt*st/2),0,nVis()-1)+1;
+    }
+  }
+  if(S.combine){ const r=ref(S.sel); if(r&&r.fi!==S.act){ S.act=r.fi; renderFileList(); buildChips(); renderText(); renderBin(); buildCoordSources(); } }
+  renderTrc(); draw(); drawMap();
+  const tb=$('tblTraces').querySelector('tbody');
+  tb.querySelectorAll('tr.sel').forEach(r=>r.classList.remove('sel'));
+  const row=tb.querySelector('tr[data-i="'+S.sel+'"]'); if(row) row.classList.add('sel');
+}
+
+/* ============================ COORDINATES / MAP ============================ */
+function buildCoordSources(){
+  const f=hdrFile(); if(!f) return;
+  const o=['<option value="rcv">Trace header — receiver (gx, gy)</option>',
+           '<option value="src">Trace header — source (sx, sy)</option>',
+           '<option value="cdp">Trace header — CDP X/Y (181–188)</option>'];
+  const anySS=dsFiles().some(x=>x.smartsolo);
+  if(anySS) o.unshift('<option value="ss">SmartSolo GPS (bytes 207–230)</option>');
+  const prev=$('coordSrc').value;
+  $('coordSrc').innerHTML=o.join('');
+  $('coordSrc').value=[...$('coordSrc').options].some(x=>x.value===prev)?prev:(anySS?'ss':'rcv');
+}
+function dms2dd(v){ const sg=v<0?-1:1; v=Math.abs(v);
+  const d=Math.floor(v/10000), m=Math.floor((v-d*10000)/100), s=v-d*10000-m*100;
+  return sg*(d+m/60+s/3600);
+}
+/* inverse UTM (WGS-84) */
+function utm2ll(E,N,zone,hemi){
+  const a=6378137,f=1/298.257223563,k0=0.9996,e2=f*(2-f),e1=(1-Math.sqrt(1-e2))/(1+Math.sqrt(1-e2));
+  const x=E-500000, y=hemi==='S'?N-10000000:N;
+  const M=y/k0, mu=M/(a*(1-e2/4-3*e2*e2/64-5*e2*e2*e2/256));
+  const p=mu+(3*e1/2-27*e1*e1*e1/32)*Math.sin(2*mu)+(21*e1*e1/16-55*Math.pow(e1,4)/32)*Math.sin(4*mu)
+          +(151*Math.pow(e1,3)/96)*Math.sin(6*mu)+(1097*Math.pow(e1,4)/512)*Math.sin(8*mu);
+  const ep2=e2/(1-e2), C=ep2*Math.cos(p)**2, T=Math.tan(p)**2;
+  const Nn=a/Math.sqrt(1-e2*Math.sin(p)**2), R=a*(1-e2)/Math.pow(1-e2*Math.sin(p)**2,1.5), D=x/(Nn*k0);
+  const lat=p-(Nn*Math.tan(p)/R)*(D*D/2-(5+3*T+10*C-4*C*C-9*ep2)*Math.pow(D,4)/24
+        +(61+90*T+298*C+45*T*T-252*ep2-3*C*C)*Math.pow(D,6)/720);
+  const lon=(D-(1+2*T+C)*Math.pow(D,3)/6+(5-2*C+28*T-3*C*C+8*ep2+24*T*T)*Math.pow(D,5)/120)/Math.cos(p);
+  return {lat:lat*180/Math.PI,lon:(zone*6-183)+lon*180/Math.PI};
+}
+/* collect positions for every file on the axis; each point carries its file */
+function coordSet(){
+  const mode=$('coordSrc').value, out={rcv:[],src:[],geo:false,unit:'',files:[]};
+  const crs=$('crsSel').value;
+  for(const f of dsFiles()){
+    const fi=S.files.indexOf(f);
+    out.files.push(f);
+    if(mode==='ss'){
+      if(!f.smartsolo) continue;
+      out.geo=true; out.unit='° WGS-84';
+      const seen=new Set(), fix=v=>Math.abs(v)>1e-3;   /* an all-zero field means the unit had no fix */
+      for(let i=0;i<f.ntr;i++){
+        const la=ssLL(f,i,207), lo=ssLL(f,i,213);
+        if(fix(la)||fix(lo)) out.rcv.push({x:lo,y:la,g:gIdx(fi,i),f,fi});
+        const sa=ssLL(f,i,219), so=ssLL(f,i,225), k=sa.toFixed(7)+','+so.toFixed(7);
+        if((fix(sa)||fix(so))&&!seen.has(k)){ seen.add(k); out.src.push({x:so,y:sa,g:gIdx(fi,i),f,fi}); }
+      }
+      continue;
+    }
+    const bx=mode==='src'?73:mode==='cdp'?181:81, by=bx+4;
+    const cu=th(f,0,89,2);
+    let kind=crs;
+    if(crs==='auto') kind=cu===2?'arcsec':cu===3?'ll':cu===4?'dms':'local';
+    const s=th(f,0,71,2);
+    const ap=v=>s>0?v*s:(s<0?v/(-s):v);
+    const conv=(x,y)=>{
+      if(kind==='ll') return {x,y,geo:true};
+      if(kind==='arcsec') return {x:x/3600,y:y/3600,geo:true};
+      if(kind==='dms') return {x:dms2dd(x),y:dms2dd(y),geo:true};
+      if(kind==='utm'){ const g=utm2ll(x,y,+$('utmZone').value,$('utmHemi').value); return {x:g.lon,y:g.lat,geo:true}; }
+      return {x,y,geo:false};
+    };
+    const seen=new Set();
+    for(let i=0;i<f.ntr;i++){
+      const p=conv(ap(th(f,i,bx,4)),ap(th(f,i,by,4)));
+      out.geo=p.geo;
+      if(p.x||p.y) out.rcv.push({x:p.x,y:p.y,g:gIdx(fi,i),f,fi});
+      if(mode!=='src'){
+        const q=conv(ap(th(f,i,73,4)),ap(th(f,i,77,4))), k=q.x+','+q.y;
+        if((q.x||q.y)&&!seen.has(k)){ seen.add(k); out.src.push({x:q.x,y:q.y,g:gIdx(fi,i),f,fi}); }
+      }
+    }
+    out.unit=out.geo?'°':(MEAS[f.bin[3255]]||'units');
+  }
+  return out;
+}
+const mc=$('mapc'), mx_=mc.getContext('2d');
+function drawMap(){
+  if(!has()) return;
+  const W=mc.width,H=mc.height;
+  mx_.setTransform(1,0,0,1,0,0); mx_.clearRect(0,0,W,H);
+  mx_.fillStyle='#060b0e'; mx_.fillRect(0,0,W,H);
+  const C=coordSet();
+  const pts=C.rcv.concat(C.src);
+  const kv=$('locKv'), note=$('locNote'), links=$('locLinks');
+  if(!pts.length){
+    mx_.fillStyle='#4f6474'; mx_.font='14px "Barlow Condensed",sans-serif'; mx_.textAlign='center';
+    mx_.fillText('No coordinates in the selected header fields.',W/2,H/2);
+    kv.innerHTML=''; note.innerHTML='<div class="note">All of the chosen coordinate bytes are zero. Try another source, or check that geometry was loaded before export.</div>';
+    links.innerHTML=''; renderLegend(C); return;
+  }
+  let x0=Infinity,x1=-Infinity,y0=Infinity,y1=-Infinity;
+  for(const p of pts){ x0=Math.min(x0,p.x);x1=Math.max(x1,p.x);y0=Math.min(y0,p.y);y1=Math.max(y1,p.y); }
+  const latc=(y0+y1)/2;
+  const kx=C.geo?111320*Math.cos(latc*Math.PI/180):1, ky=C.geo?110574:1;
+  let wx=(x1-x0)*kx, wy=(y1-y0)*ky;
+  if(wx<1e-9&&wy<1e-9){ wx=wy=20; } else if(wx<wy*0.02){ wx=wy*0.02; } else if(wy<wx*0.02){ wy=wx*0.02; }
+  const cxm=(x0+x1)/2, cym=(y0+y1)/2;
+  const pad=Math.max(wx,wy)*0.12;
+  const sc_=Math.min((W-70)/(wx+2*pad),(H-50)/(wy+2*pad));
+  const px=p=>40+(W-70)/2+((p.x-cxm)*kx)*sc_;
+  const py=p=>25+(H-50)/2-((p.y-cym)*ky)*sc_;
+
+  if($('basemap').checked&&C.geo) drawTiles(x0,x1,y0,y1,px,py);
+
+  mx_.strokeStyle='rgba(34,211,238,.10)'; mx_.lineWidth=1;
+  const gs=niceStep(Math.max(wx,wy)/(C.geo?kx:1),5);
+  for(let g=Math.ceil(x0/gs)*gs;g<=x1;g+=gs){ const X=px({x:g,y:0}); mx_.beginPath(); mx_.moveTo(X,0); mx_.lineTo(X,H); mx_.stroke(); }
+  const gsy=niceStep(Math.max(wx,wy)/(C.geo?ky:1),5);
+  for(let g=Math.ceil(y0/gsy)*gsy;g<=y1;g+=gsy){ const Y=py({x:0,y:g}); mx_.beginPath(); mx_.moveTo(0,Y); mx_.lineTo(W,Y); mx_.stroke(); }
+
+  for(const p of C.rcv){
+    const X=px(p),Y=py(p), on=p.g===S.sel, inG=S.vpos.has(p.g);
+    mx_.beginPath(); mx_.arc(X,Y,on?5:(inG?3:2),0,7);
+    mx_.fillStyle=on?'#4ade80':(!inG?'rgba(79,100,116,.6)':(S.combine?p.f.color:'rgba(34,211,238,.85)')); mx_.fill();
+    if(on){ mx_.strokeStyle='#4ade80'; mx_.lineWidth=1; mx_.beginPath(); mx_.arc(X,Y,9,0,7); mx_.stroke(); }
+  }
+  for(const p of C.src){
+    const X=px(p),Y=py(p);
+    mx_.beginPath(); mx_.moveTo(X,Y-8); mx_.lineTo(X+7,Y+5); mx_.lineTo(X-7,Y+5); mx_.closePath();
+    mx_.fillStyle='rgba(255,159,28,.9)'; mx_.fill();
+  }
+  const barM=niceStep(Math.max(wx,wy)/4,1), barPx=barM*sc_;
+  mx_.strokeStyle='#7a94a6'; mx_.fillStyle='#7a94a6'; mx_.lineWidth=2;
+  mx_.beginPath(); mx_.moveTo(20,H-18); mx_.lineTo(20+barPx,H-18); mx_.stroke();
+  mx_.font='11px "Share Tech Mono",monospace'; mx_.textAlign='left'; mx_.textBaseline='bottom';
+  mx_.fillText(barM>=1000?(barM/1000)+' km':barM.toFixed(barM<1?1:0)+' m',20,H-22);
+
+  const first=C.rcv[0], last=C.rcv[C.rcv.length-1];
+  const len=first&&last?Math.hypot((last.x-first.x)*kx,(last.y-first.y)*ky):0;
+  const az=first&&last?(Math.atan2((last.x-first.x)*kx,(last.y-first.y)*ky)*180/Math.PI+360)%360:0;
+  const rows=[['Points',C.rcv.length+' receiver / '+C.src.length+' source'+(S.combine?' · '+C.files.length+' files':'')],
+    ['X range',fmtNum(x0,C.geo?7:2)+'  →  '+fmtNum(x1,C.geo?7:2)+' '+C.unit],
+    ['Y range',fmtNum(y0,C.geo?7:2)+'  →  '+fmtNum(y1,C.geo?7:2)+' '+C.unit],
+    ['Extent',fmtNum(wx,1)+' m E-W × '+fmtNum(wy,1)+' m N-S'],
+    ['Centre',fmtNum(cxm,C.geo?7:2)+', '+fmtNum(cym,C.geo?7:2)],
+    ['Spread length',fmtNum(len,1)+' m'],['Spread azimuth',az.toFixed(1)+'°']];
+  if(C.src.length===1&&first){
+    const s=C.src[0];
+    rows.push(['Nearest offset',fmtNum(Math.min(...C.rcv.map(p=>Math.hypot((p.x-s.x)*kx,(p.y-s.y)*ky))),1)+' m']);
+    rows.push(['Furthest offset',fmtNum(Math.max(...C.rcv.map(p=>Math.hypot((p.x-s.x)*kx,(p.y-s.y)*ky))),1)+' m']);
+  }
+  kv.innerHTML=rows.map(r=>'<dt>'+r[0]+'</dt><dd>'+r[1]+'</dd>').join('');
+
+  if(C.geo){
+    const la=cym.toFixed(6),lo=cxm.toFixed(6);
+    links.innerHTML='Centre '+la+', '+lo+' — open in '+
+      '<a target="_blank" rel="noopener" href="https://www.openstreetmap.org/?mlat='+la+'&mlon='+lo+'#map=18/'+la+'/'+lo+'">OpenStreetMap</a> · '+
+      '<a target="_blank" rel="noopener" href="https://www.google.com/maps/search/?api=1&query='+la+','+lo+'">Google Maps</a>';
+    note.innerHTML='';
+  } else {
+    links.innerHTML='';
+    note.innerHTML='<div class="note">These are projected/local grid values, not latitude and longitude. Pick <b>UTM zone…</b> in the CRS box to place them on the globe.</div>';
+  }
+  if($('coordSrc').value!=='ss'&&dsFiles().some(f=>f.smartsolo))
+    note.innerHTML+='<div class="note">These files also carry SmartSolo GPS fixes — select that source to see WGS-84 positions.</div>';
+  renderLegend(C);
+}
+function renderLegend(C){
+  const base='<span><i style="background:var(--orange);clip-path:polygon(50% 0,100% 100%,0 100%)"></i>Source</span>'+
+             '<span><i style="background:var(--green)"></i>Selected</span>';
+  $('legend').innerHTML=(S.combine&&C.files.length>1)
+    ? C.files.map(f=>'<span><i style="background:'+f.color+'"></i>'+f.name.replace(/\.[^.]+$/,'')+'</span>').join('')+base
+    : '<span><i style="background:var(--cyan)"></i>Receiver</span>'+base;
+}
+function tileURL(x,y,z){ return 'https://tile.openstreetmap.org/'+z+'/'+x+'/'+y+'.png'; }
+const lon2tx=(lo,z)=>(lo+180)/360*Math.pow(2,z);
+const lat2ty=(la,z)=>{const r=la*Math.PI/180;return (1-Math.log(Math.tan(r)+1/Math.cos(r))/Math.PI)/2*Math.pow(2,z);};
+let tileFail=false;
+function drawTiles(x0,x1,y0,y1,px,py){
+  if(tileFail) return;
+  let z=19;
+  for(;z>1;z--){
+    const w=Math.abs(lon2tx(x1,z)-lon2tx(x0,z))*256, h=Math.abs(lat2ty(y1,z)-lat2ty(y0,z))*256;
+    if(w<mc.width&&h<mc.height) break;
+  }
+  const tx0=Math.floor(lon2tx(x0,z))-1, tx1=Math.floor(lon2tx(x1,z))+1;
+  const ty0=Math.floor(lat2ty(y1,z))-1, ty1=Math.floor(lat2ty(y0,z))+1;
+  if((tx1-tx0)*(ty1-ty0)>64) return;
+  const N=Math.pow(2,z);
+  for(let tx=tx0;tx<=tx1;tx++) for(let ty=ty0;ty<=ty1;ty++){
+    const im=new Image(); im.crossOrigin='anonymous';
+    im.onload=()=>{
+      const lo0=tx/N*360-180, lo1=(tx+1)/N*360-180;
+      const la0=Math.atan(Math.sinh(Math.PI*(1-2*ty/N)))*180/Math.PI;
+      const la1=Math.atan(Math.sinh(Math.PI*(1-2*(ty+1)/N)))*180/Math.PI;
+      const X=px({x:lo0,y:la0}), Y=py({x:lo0,y:la0});
+      const X2=px({x:lo1,y:la1}), Y2=py({x:lo1,y:la1});
+      mx_.globalAlpha=.55; mx_.drawImage(im,X,Y,X2-X,Y2-Y); mx_.globalAlpha=1;
+    };
+    im.onerror=()=>{ if(!tileFail){ tileFail=true;
+      $('locNote').innerHTML='<div class="note">Basemap tiles could not be loaded — you are offline or the tile server is blocked. The plan view still works.</div>'; } };
+    im.src=tileURL(((tx%N)+N)%N,ty,z);
+  }
+}
+
+/* ============================================================================
+   PROCESSING — sweep synthesis, FFT correlation, gather sorting, SEG-Y export
+   ==========================================================================*/
+
+/* ---------- ASCII -> EBCDIC (shared by the demo and the SEG-Y writer) ---------- */
+function asc2e(c){ const t=c.charCodeAt(0); if(t===32) return 0x40;
+  for(let i=64;i<256;i++) if(EBCDIC[i]===t) return i; return 0x40; }
+
+/* ---------- FFT (iterative radix-2, cached twiddles) ---------- */
+const TW=new Map();
+function twiddle(n){
+  let t=TW.get(n);
+  if(!t){ const c=new Float64Array(n>>1), s=new Float64Array(n>>1);
+    for(let k=0;k<(n>>1);k++){ c[k]=Math.cos(2*Math.PI*k/n); s[k]=Math.sin(2*Math.PI*k/n); }
+    t={c,s}; TW.set(n,t); }
+  return t;
+}
+function fft(re,im,inv){
+  const n=re.length, {c,s}=twiddle(n);
+  for(let i=1,j=0;i<n;i++){
+    let bit=n>>1;
+    for(;j&bit;bit>>=1) j^=bit;
+    j^=bit;
+    if(i<j){ let t=re[i];re[i]=re[j];re[j]=t; t=im[i];im[i]=im[j];im[j]=t; }
+  }
+  for(let len=2;len<=n;len<<=1){
+    const half=len>>1, step=n/len;
+    for(let i=0;i<n;i+=len) for(let j=0;j<half;j++){
+      const k=j*step, wr=c[k], wi=inv?s[k]:-s[k];
+      const ur=re[i+j], ui=im[i+j], xr=re[i+j+half], xi=im[i+j+half];
+      const vr=xr*wr-xi*wi, vi=xr*wi+xi*wr;
+      re[i+j]=ur+vr; im[i+j]=ui+vi; re[i+j+half]=ur-vr; im[i+j+half]=ui-vi;
+    }
+  }
+  if(inv) for(let i=0;i<n;i++){ re[i]/=n; im[i]/=n; }
+}
+const pow2=n=>{ let p=1; while(p<n) p<<=1; return p; };
+
+/* ---------- sweep ---------- */
+function readSw(){
+  return {f1:+$('swF1').value, f2:+$('swF2').value, len:+$('swLen').value,
+          tapS:+$('swTapS').value, tapE:+$('swTapE').value, phase:+$('swPh').value,
+          type:$('swType').value, out:$('swOut').value,
+          lag:+$('swLag').value, src:$('swSrc').value,
+          rsOn:$('rsOn').checked, rsDt:Math.max(0.05,+$('rsDt').value||1)};
+}
+/* processing always reads the APPLIED snapshot, not the live inputs —
+   press Run correlation to apply what's typed */
+function swPar(){ return S.corr.par||(S.corr.par=readSw()); }
+function swKey(dt){ const p=swPar(); return [p.f1,p.f2,p.len,p.tapS,p.tapE,p.phase,p.type,dt].join('|'); }
+const SWC=new Map();
+/* pilot sweep sampled at dt microseconds */
+function sweep(dt){
+  const key=swKey(dt);
+  let e=SWC.get(key); if(e) return e;
+  const p=swPar(), dtms=dt/1000, n=Math.max(2,Math.round(p.len/dtms)+1);
+  const s=new Float32Array(n), T=p.len/1000, ph=p.phase*Math.PI/180;
+  const f1=Math.max(1e-6,p.f1), f2=Math.max(f1+1e-6,p.f2);
+  for(let k=0;k<n;k++){
+    const t=k*dtms/1000;
+    let arg;
+    if(p.type==='log'){                       /* frequency rises geometrically */
+      const r=f2/f1;
+      arg=2*Math.PI*f1*T/Math.log(r)*(Math.pow(r,t/T)-1);
+    } else {                                  /* linear sweep */
+      arg=2*Math.PI*(f1*t+(f2-f1)*t*t/(2*T));
+    }
+    s[k]=Math.sin(arg+ph);
+  }
+  /* cosine tapers — start and end lengths set independently */
+  const ntS=Math.min(Math.floor(n/2),Math.round(p.tapS/dtms));
+  for(let k=0;k<ntS;k++) s[k]*=0.5*(1-Math.cos(Math.PI*k/ntS));
+  const ntE=Math.min(Math.floor(n/2),Math.round(p.tapE/dtms));
+  for(let k=0;k<ntE;k++) s[n-1-k]*=0.5*(1-Math.cos(Math.PI*k/ntE));
+  e={s,n,par:p};
+  if(SWC.size>12) SWC.clear();
+  SWC.set(key,e);
+  return e;
+}
+/* effective sample interval in µs once resampling is applied */
+function eDT(f){ const p=swPar(); return p.rsOn?Math.round(p.rsDt*1000):f.dt; }
+function baseNS(f){ const p=swPar();
+  return p.rsOn&&eDT(f)!==f.dt?Math.floor((f.ns-1)*f.dt/eDT(f))+1:f.ns; }
+/* anti-alias low-pass + resample srcUs -> dstUs (FFT filter, linear interp) */
+function resampleTo(d,srcUs,dstUs){
+  if(srcUs===dstUs) return d;
+  const n=d.length, nOut=Math.floor((n-1)*srcUs/dstUs)+1;
+  let src=d;
+  if(dstUs>srcUs){                                  /* downsampling: filter first */
+    const N=pow2(n), re=new Float64Array(N), im=new Float64Array(N);
+    for(let k=0;k<n;k++) re[k]=d[k];
+    fft(re,im,false);
+    const kNyq=0.5*N*srcUs/dstUs, k0=0.8*kNyq;      /* cosine roll-off 0.8-1.0 x new Nyquist */
+    for(let k=1;k<=N/2;k++){
+      let w=1;
+      if(k>=kNyq) w=0;
+      else if(k>k0) w=0.5*(1+Math.cos(Math.PI*(k-k0)/(kNyq-k0)));
+      if(w<1){ re[k]*=w; im[k]*=w; if(k<N/2){ re[N-k]*=w; im[N-k]*=w; } }
+    }
+    fft(re,im,true);
+    src=re;
+  }
+  const out=new Float32Array(nOut), r=dstUs/srcUs;
+  for(let k=0;k<nOut;k++){
+    const x=k*r, i=Math.min(n-2,Math.floor(x)), fr=x-i;
+    out[k]=src[i]*(1-fr)+src[i+1]*fr;
+  }
+  return out;
+}
+/* ---------- pilot trace loaded from a SEG-Y file ---------- */
+S.pilot=null;                       /* {name, dt(us), s:Float32Array, id} */
+const PLC=new Map();                /* pilot resampled per target dt */
+function setPilot(f){
+  const d=getTrace(f,0);
+  S.pilot={name:f.name, dt:f.dt, s:Float32Array.from(d), id:f.name+'|'+f.ntr+'|'+f.ns+'|'+Date.now()};
+  PLC.clear();
+  $('pilotHint').style.display='block';
+  $('pilotHint').textContent='Pilot: '+f.name+' — '+f.ns+' samples · '+(f.dt/1000)+' ms · '+
+    (((f.ns-1)*f.dt/1000)/1000).toFixed(3)+' s'+(f.ntr>1?' (trace 1 of '+f.ntr+' used)':'');
+}
+/* pilot resampled to the data's sample interval (linear interpolation) */
+function pilotAt(dt){
+  if(!S.pilot) return null;
+  if(S.pilot.dt===dt) return {s:S.pilot.s,n:S.pilot.s.length};
+  const key=S.pilot.id+'|'+dt;
+  let e=PLC.get(key); if(e) return e;
+  const r=S.pilot.dt/dt, n=Math.max(2,Math.round((S.pilot.s.length-1)*r)+1);
+  const out=new Float32Array(n), src=S.pilot.s;
+  for(let k=0;k<n;k++){
+    const x=k/r, i=Math.min(src.length-2,Math.floor(x)), fr=x-i;
+    out[k]=src[i]*(1-fr)+src[i+1]*fr;
+  }
+  e={s:out,n};
+  if(PLC.size>8) PLC.clear();
+  PLC.set(key,e);
+  return e;
+}
+/* the correlation operator, whichever way it was defined */
+function pilotFor(dt){
+  if(swPar().src==='pilot'){
+    const p=pilotAt(dt);
+    if(p) return p;
+    /* nothing loaded yet — fall back to the typed sweep so the app keeps working */
+  }
+  return sweep(dt);
+}
+/* autocorrelation of the sweep = the wavelet correlation puts on every reflection */
+function klauder(dt){
+  const {s,n}=pilotFor(dt), N=pow2(2*n), re=new Float64Array(N), im=new Float64Array(N);
+  for(let k=0;k<n;k++) re[k]=s[k];
+  fft(re,im,false);
+  for(let k=0;k<N;k++){ const a=re[k],b=im[k]; re[k]=a*a+b*b; im[k]=0; }
+  fft(re,im,true);
+  const m=Math.min(n,Math.round(N/4)), out=new Float32Array(2*m+1);
+  for(let k=-m;k<=m;k++) out[k+m]=re[(k+N)%N];
+  let mx=0; for(const v of out) mx=Math.max(mx,Math.abs(v));
+  if(mx>0) for(let k=0;k<out.length;k++) out[k]/=mx;
+  return out;
+}
+/* cross-correlate a raw sweep record with the pilot:
+   r[k] = sum_j raw[k+j]*sw[j], evaluated from lag k0 = lag/dt onward */
+function correlate(d,dt,outMode,lagMs){
+  const {s,n}=pilotFor(dt), Nrec=d.length;
+  const Nout=outMode==='full'?Nrec:Math.max(1,Nrec-n+1);
+  const k0=Math.round((lagMs||0)/(dt/1000));
+  const N=pow2(Nrec+n+Math.abs(k0));
+  const re=new Float64Array(N), im=new Float64Array(N);
+  const sr=new Float64Array(N), si=new Float64Array(N);
+  for(let k=0;k<Nrec;k++) re[k]=d[k];
+  for(let k=0;k<n;k++) sr[k]=s[k];
+  fft(re,im,false); fft(sr,si,false);
+  for(let k=0;k<N;k++){                      /* R * conj(S) */
+    const ar=re[k],ai=im[k],br=sr[k],bi=-si[k];
+    re[k]=ar*br-ai*bi; im[k]=ar*bi+ai*br;
+  }
+  fft(re,im,true);
+  let E=0; for(let k=0;k<n;k++) E+=s[k]*s[k];       /* normalize by pilot energy */
+  E=E||1;
+  const out=new Float32Array(Nout);
+  for(let k=0;k<Nout;k++) out[k]=re[((k+k0)%N+N)%N]/E;
+  return out;
+}
+
+/* ---------- per-file processing ---------- */
+function isVib(f){ return f.srcType==='vib'; }
+function corrOn(f){ return S.corr.on&&isVib(f); }
+function nSweep(dt){ return pilotFor(dt).n; }
+function corrLen(f){
+  return swPar().out==='full'?baseNS(f):Math.max(1,baseNS(f)-nSweep(eDT(f))+1);
+}
+/* effective sample count / start time once processing is applied */
+function eNS(f){ return corrOn(f)?corrLen(f):baseNS(f); }
+function eTstart(f){ return corrOn(f)?f.tstart+swPar().lag:f.tstart; }
+function procKey(){ const p=swPar();
+  const rs=p.rsOn?('R'+p.rsDt):'';
+  if(!S.corr.on) return 'raw'+rs;
+  const src=p.src==='pilot'&&S.pilot?('P:'+S.pilot.id):[p.f1,p.f2,p.len,p.tapS,p.tapE,p.phase,p.type].join('|');
+  return src+'|'+p.out+'|'+p.lag+'|'+rs;
+}
+function procTrace(f,i){
+  const p=swPar(), resamp=p.rsOn&&eDT(f)!==f.dt;
+  if(!corrOn(f)&&!resamp) return getTrace(f,i);
+  const key=procKey();
+  if(f.pkey!==key){ f.pcache.clear(); f.pkey=key; }
+  if(f.pcache.has(i)) return f.pcache.get(i);
+  let d=getTrace(f,i);
+  if(resamp) d=resampleTo(d,f.dt,eDT(f));
+  if(corrOn(f)) d=correlate(d,eDT(f),p.out,p.lag);
+  else if(!(d instanceof Float32Array)) d=Float32Array.from(d);
+  if(f.pcache.size>300) f.pcache.clear();
+  f.pcache.set(i,d);
+  return d;
+}
+function clearProc(){ for(const f of S.files){ f.pcache.clear(); f.pkey=''; } }
+/* amplitude stats on the PROCESSED traces — drives the file/dataset scaling modes */
+function procStats(f){
+  if(!corrOn(f)){ f.pmax=f.gmax; f.prms=f.grms; return; }
+  const n=eNS(f); let mx=0,ss=0,cnt=0;
+  const step=Math.max(1,Math.floor(f.ntr/24)), sdec=Math.max(1,Math.floor(n/1500));
+  for(let i=0;i<f.ntr;i+=step){
+    const d=procTrace(f,i);
+    for(let k=0;k<n;k+=sdec){ const v=Math.abs(d[k]); if(v>mx) mx=v; ss+=d[k]*d[k]; cnt++; }
+  }
+  f.pmax=mx||1; f.prms=Math.sqrt(ss/Math.max(1,cnt))||1;
+}
+function restat(){ for(const f of S.files) procStats(f); dsStats(); }
+
+/* ---------- geometry helpers ---------- */
+function coScal(f,i){ const s=th(f,i,71,2); return s>0?s:(s<0?1/(-s):1); }
+function rxy(f,i){ const c=coScal(f,i); return [th(f,i,81,4)*c,th(f,i,85,4)*c]; }
+function sxy(f,i){ const c=coScal(f,i); return [th(f,i,73,4)*c,th(f,i,77,4)*c]; }
+/* header offset if it is populated, otherwise straight from the coordinates */
+function offsetOf(f,i){
+  const h=th(f,i,37,4);
+  if(h) return Math.abs(h)*(th(f,i,69,2)?1:1);
+  const [gx,gy]=rxy(f,i), [sx,sy]=sxy(f,i);
+  if(!gx&&!gy&&!sx&&!sy) return 0;
+  return Math.hypot(gx-sx,gy-sy);
+}
+
+/* ---------- gathers ---------- */
+const GKEYS={
+  shot:[['fldr','Field record (FFID, 9–12)'],['ep','Energy source point (17–20)'],['sxy','Source X,Y (73–80)']],
+  rcv:[['tracf','Channel number (13–16)'],['gxy','Receiver X,Y (81–88)']],
+  off:[['auto','Offset (37–40 or from coords)']]
+};
+function gKeyOf(g){
+  const r=ref(g); if(!r) return '';
+  const f=r.f,i=r.i,m=S.gath.mode,k=S.gath.key;
+  if(m==='shot'){
+    if(k==='ep') return String(th(f,i,17,4));
+    if(k==='sxy'){ const [x,y]=sxy(f,i); return x.toFixed(2)+' / '+y.toFixed(2); }
+    return String(th(f,i,9,4));
+  }
+  if(m==='rcv'){
+    if(k==='gxy'){ const [x,y]=rxy(f,i); return x.toFixed(2)+' / '+y.toFixed(2); }
+    return String(th(f,i,13,4));
+  }
+  const b=Math.max(0.01,S.gath.bin);
+  return String(Math.round(offsetOf(f,i)/b)*b);
+}
+function gLabel(key,n){
+  const m=S.gath.mode;
+  const head=m==='shot'?(S.gath.key==='ep'?'EP ':S.gath.key==='sxy'?'SRC ':'FFID '):
+             m==='rcv'?(S.gath.key==='gxy'?'RCV ':'CHAN '):'OFFSET ';
+  return head+key+(m==='off'?' m':'')+'  ·  '+n+' tr';
+}
+/* rebuild the ordered list of traces on the axis (S.vis) + the ensemble list */
+function buildVis(){
+  const N=nTot(), all=[];
+  for(let g=0;g<N;g++) all.push(g);
+  if(S.gath.mode==='none'||!N){
+    S.vis=all; S.ens=[];
+  } else {
+    const map=new Map();
+    for(const g of all){ const k=gKeyOf(g); if(!map.has(k)) map.set(k,[]); map.get(k).push(g); }
+    S.ens=[...map.entries()].sort((a,b)=>{
+      const x=parseFloat(a[0]), y=parseFloat(b[0]);
+      return (Number.isNaN(x)||Number.isNaN(y))?String(a[0]).localeCompare(String(b[0])):x-y;
+    });
+    S.gath.ens=clamp(S.gath.ens,0,S.ens.length-1);
+    const list=S.ens[S.gath.ens][1].slice();
+    /* order within the gather: by offset when offsets vary, else by channel */
+    const offs=list.map(g=>{const r=ref(g); return offsetOf(r.f,r.i);});
+    const useOff=new Set(offs.map(o=>o.toFixed(3))).size>1;
+    list.sort((a,b)=>{
+      const ra=ref(a), rb=ref(b);
+      if(useOff) return offsetOf(ra.f,ra.i)-offsetOf(rb.f,rb.i);
+      const ca=th(ra.f,ra.i,13,4), cb=th(rb.f,rb.i,13,4);
+      return ca!==cb?ca-cb:a-b;
+    });
+    S.vis=list;
+  }
+  S.vpos=new Map(); S.vis.forEach((g,p)=>S.vpos.set(g,p));
+  if(!S.vpos.has(S.sel)) S.sel=S.vis.length?S.vis[0]:0;
+  renderEns();
+}
+function nVis(){ return S.vis.length; }
+function visPos(g){ const p=S.vpos.get(g); return p===undefined?0:p; }
+function renderEns(){
+  const sel=$('gEns');
+  if(S.gath.mode==='none'||!S.ens.length){
+    sel.innerHTML='<option>—</option>'; sel.disabled=true;
+    $('gathTag').textContent=''; 
+    $('gHint').textContent='Sorting spans every file on the axis — tick Combine to gather across files.';
+    return;
+  }
+  sel.disabled=false;
+  sel.innerHTML=S.ens.map((e,j)=>'<option value="'+j+'">'+gLabel(e[0],e[1].length)+'</option>').join('');
+  sel.value=S.gath.ens;
+  const sizes=S.ens.map(e=>e[1].length), same=sizes.every(x=>x===sizes[0]);
+  $('gathTag').textContent=S.ens.length+' ens';
+  $('gHint').textContent=S.ens.length+' gathers · '+(same?sizes[0]+' traces each':Math.min(...sizes)+'–'+Math.max(...sizes)+' traces')+
+    (S.combine?'':' · from '+S.files[S.act].name);
+}
+function vibHint(){
+  const vs=dsFiles().filter(isVib);
+  if(!vs.length){ $('vibTag').textContent=''; $('vibHint').textContent='No file on the axis is marked vibroseis — use the V/H badge in the file list.'; return; }
+  $('vibTag').textContent=vs.length+' vib';
+  const p=swPar(), bits=[];
+  if(p.src==='pilot'&&!S.pilot) bits.push('no pilot file loaded yet — using the typed parameters until one is');
+  for(const f of vs){
+    const dt=eDT(f), nb=baseNS(f), nsw=nSweep(dt), swS=(nsw-1)*dt/1000/1000, rec=(nb-1)*dt/1000;
+    if(nsw>=nb) bits.push(f.name+': sweep ('+swS.toFixed(3)+' s) is longer than the record ('+(rec/1000).toFixed(3)+' s)');
+    else bits.push(f.name.replace(/\.[^.]+$/,'')+': '+(rec/1000).toFixed(3)+' s − '+swS.toFixed(3)+' s → '+
+      ((eNS(f)-1)*dt/1000/1000).toFixed(3)+' s of listen time'+
+      (p.rsOn&&dt!==f.dt?' at '+(dt/1000)+' ms':'')+(p.lag?', lag '+p.lag+' ms':''));
+  }
+  $('vibHint').textContent=(S.corr.on?'':'(off) ')+bits.join(' · ');
+}
+/* pull sweep settings out of the binary header if the recorder wrote them */
+function sweepFromHeader(){
+  const f=hdrFile(); if(!f) return;
+  const b=f.bin, got=[];
+  if(b[3233]){ $('swF1').value=b[3233]; got.push('start '+b[3233]+' Hz'); }
+  if(b[3235]){ $('swF2').value=b[3235]; got.push('end '+b[3235]+' Hz'); }
+  if(b[3237]){ $('swLen').value=b[3237]; got.push('length '+b[3237]+' ms'); }
+  if(b[3243]){ $('swTapS').value=b[3243]; got.push('taper start '+b[3243]+' ms'); }
+  if(b[3245]){ $('swTapE').value=b[3245]; got.push('taper end '+b[3245]+' ms'); }
+  if(b[3239]===3) $('swType').value='log';
+  msg(got.length?f.name+': read '+got.join(', ')+' from the binary header.'
+                :f.name+': the binary header carries no sweep parameters — type them in.');
+  onSweepChange();
+}
+
+/* ---------- sweep preview ---------- */
+function drawSwPrev(){
+  const f=dsFiles().find(isVib)||hdrFile(), dt=f?eDT(f):1000;
+  const c=$('swPrevC'), x=c.getContext('2d'), W=c.width, H=c.height;
+  x.fillStyle='#050809'; x.fillRect(0,0,W,H);
+  const {s,n}=pilotFor(dt), kl=klauder(dt), p=swPar();
+  const usingPilot=p.src==='pilot'&&S.pilot;
+  const plot=(arr,y0,h,col,lab)=>{
+    let mx=0; for(const v of arr) mx=Math.max(mx,Math.abs(v));
+    mx=mx||1;
+    x.strokeStyle='rgba(34,211,238,.15)'; x.beginPath(); x.moveTo(30,y0+h/2); x.lineTo(W-8,y0+h/2); x.stroke();
+    x.beginPath();
+    for(let k=0;k<arr.length;k++){
+      const X=30+(k/(arr.length-1))*(W-38), Y=y0+h/2-arr[k]/mx*(h/2-4);
+      k?x.lineTo(X,Y):x.moveTo(X,Y);
+    }
+    x.strokeStyle=col; x.lineWidth=1; x.stroke();
+    x.fillStyle='#7a94a6'; x.font='10px "Share Tech Mono",monospace'; x.textAlign='left';
+    x.fillText(lab,32,y0+11);
+  };
+  plot(s,4,H/2-8,'#22d3ee',usingPilot
+    ?'PILOT TRACE  '+S.pilot.name+'  '+(((n-1)*dt/1000)/1000).toFixed(3)+' s'
+    :'PILOT SWEEP  '+p.f1+'–'+p.f2+' Hz  '+(p.len/1000).toFixed(3)+' s  '+(p.type==='log'?'log':'linear'));
+  plot(kl,H/2+4,H/2-8,'#ff9f1c','KLAUDER WAVELET (sweep autocorrelation)');
+  /* Klauder side-lobe / breadth readout */
+  const dtms=dt/1000, mid=(kl.length-1)/2;
+  let half=0;
+  for(let k=Math.floor(mid);k<kl.length;k++) if(Math.abs(kl[k])<0.5){ half=(k-mid)*dtms; break; }
+  const bw=Math.abs(p.f2-p.f1);
+  $('swPrevT').textContent='Sampled at '+dtms+' ms · '+
+    (usingPilot?'operator from file':'bandwidth '+bw+' Hz')+' · Klauder main lobe ≈ ±'+half.toFixed(1)+
+    ' ms (half-amplitude)'+(usingPilot?'':' · theoretical resolution ≈ '+(1000/(2*bw)).toFixed(1)+' ms')+
+    (p.lag?' · lag '+p.lag+' ms':'');
+}
+
+/* ============================ SEG-Y WRITER ============================ */
+/* Write the traces listed in gidx (global indices) as a rev-1 IEEE float file. */
+function writeSegy(gidx,title){
+  if(!gidx.length) return null;
+  const r0=ref(gidx[0]), dt=eDT(r0.f);
+  const mixed=gidx.some(g=>eDT(ref(g).f)!==dt);
+  if(mixed){ fail('These traces have different sample intervals — export one gather at a time, or a set that shares a rate.'); return null; }
+  let ns=0;
+  for(const g of gidx){ const r=ref(g); ns=Math.max(ns,eNS(r.f)); }
+  const tlen=240+ns*4, buf=new ArrayBuffer(3600+gidx.length*tlen);
+  const dv=new DataView(buf), u8=new Uint8Array(buf);
+  const p=swPar(), anyCorr=gidx.some(g=>corrOn(ref(g).f));
+  const lines=['C01 '+title,
+    'C02 WRITTEN BY SEG-Y WIGGLE VIEWER V2.2',
+    'C03 TRACES: '+gidx.length+'   SAMPLES: '+ns+'   INTERVAL: '+(dt/1000)+' MS',
+    'C04 SOURCE FILES: '+[...new Set(gidx.map(g=>ref(g).f.name))].join(' ').slice(0,72),
+    anyCorr?'C05 VIBROSEIS CORRELATED WITH PILOT SWEEP:':'C05 NO SOURCE CORRELATION APPLIED',
+    anyCorr?(p.src==='pilot'&&S.pilot
+             ?('C06 PILOT TRACE FROM FILE: '+S.pilot.name.slice(0,50))
+             :('C06 '+p.f1+'-'+p.f2+' HZ  '+p.len+' MS  '+(p.type==='log'?'LOG':'LINEAR')+
+               '  TAPER '+p.tapS+'/'+p.tapE+' MS  PHASE '+p.phase+' DEG')):'C06',
+    anyCorr?('C07 OUTPUT: '+(p.out==='full'?'FULL RECORD':'LISTEN TIME (RECORD MINUS SWEEP)')+
+             (p.lag?'  CORRELATION LAG '+p.lag+' MS':'')):'C07',
+    anyCorr?'C7A NORMALIZED BY PILOT ENERGY'+(p.rsOn?';  RECORDS RESAMPLED TO '+p.rsDt+' MS (ANTI-ALIASED)':''):
+            (p.rsOn?'C7A RECORDS RESAMPLED TO '+p.rsDt+' MS (ANTI-ALIASED)':'C7A'),
+    'C08 SAMPLE FORMAT: IEEE 4-BYTE FLOAT (CODE 5), BIG ENDIAN',
+    'C09 TRACE HEADERS COPIED FROM THE SOURCE FILES; NS AND DT UPDATED'];
+  for(let i=0;i<40;i++){ const t=(lines[i]||'').padEnd(80,' ');
+    for(let c=0;c<80;c++) u8[i*80+c]=asc2e(t[c]); }
+  /* binary header */
+  dv.setInt32(3200+0,1); dv.setInt32(3200+4,r0.f.bin[3205]||1); dv.setInt32(3200+8,1);
+  dv.setInt16(3200+12,gidx.length); dv.setUint16(3200+16,dt); dv.setUint16(3200+18,dt);
+  dv.setUint16(3200+20,ns); dv.setUint16(3200+22,ns); dv.setInt16(3200+24,5);
+  dv.setInt16(3200+26,S.gath.mode==='none'?1:S.ens.length?S.ens[S.gath.ens][1].length:1);
+  dv.setInt16(3200+28,{none:1,shot:5,rcv:6,off:7}[S.gath.mode]);
+  if(anyCorr){
+    if(p.src!=='pilot'||!S.pilot){
+      dv.setInt16(3200+32,p.f1); dv.setInt16(3200+34,p.f2); dv.setInt16(3200+36,p.len);
+      dv.setInt16(3200+38,p.type==='log'?3:1);
+      dv.setInt16(3200+42,p.tapS); dv.setInt16(3200+44,p.tapE); dv.setInt16(3200+46,1);
+    }
+    dv.setInt16(3200+48,1);                                  /* correlated = yes */
+  }
+  dv.setInt16(3200+54,r0.f.bin[3255]||1);
+  dv.setUint16(3200+300,0x0100); dv.setInt16(3200+302,1);
+  /* traces */
+  gidx.forEach((g,k)=>{
+    const r=ref(g), f=r.f, o=3600+k*tlen;
+    u8.set(f.u8.subarray(thOff(f,r.i),thOff(f,r.i)+240),o);
+    if(f.little){                                    /* rewrite the known fields big-endian */
+      for(const fd of TRC_FIELDS){
+        const v=th(f,r.i,fd[0],fd[1],fd[2]==='i');
+        if(fd[1]===2) dv.setInt16(o+fd[0]-1,v); else dv.setInt32(o+fd[0]-1,v);
+      }
+    }
+    dv.setInt32(o+0,k+1); dv.setInt32(o+4,k+1);
+    dv.setUint16(o+114,ns); dv.setUint16(o+116,dt);
+    dv.setInt16(o+108,Math.round(eTstart(f)));  /* includes the correlation lag */
+    if(corrOn(f)) dv.setInt16(o+124,1);              /* correlated flag */
+    const d=procTrace(f,r.i), n=Math.min(ns,d.length);
+    for(let j=0;j<n;j++) dv.setFloat32(o+240+j*4,d[j]);
+  });
+  return buf;
+}
+function exportSegy(all){
+  if(!has()) return;
+  const p=swPar();
+  if(all&&S.gath.mode!=='none'){
+    const order=[]; for(const e of S.ens) order.push(...e[1]);
+    const b=writeSegy(order,'ALL '+S.ens.length+' '+{shot:'COMMON SHOT',rcv:'COMMON RECEIVER',off:'COMMON OFFSET'}[S.gath.mode]+' GATHERS');
+    if(b) dl(new Blob([b],{type:'application/octet-stream'}),stem()+'_'+S.gath.mode+'_all.segy');
+  } else {
+    const lab=S.gath.mode==='none'?'TRACES AS DISPLAYED':gLabel(S.ens[S.gath.ens][0],S.vis.length);
+    const b=writeSegy(S.vis,lab);
+    if(b) dl(new Blob([b],{type:'application/octet-stream'}),
+      stem()+(S.gath.mode==='none'?'_traces':'_'+S.gath.mode+'_'+String(S.ens[S.gath.ens][0]).replace(/[^\w.-]+/g,'_'))+
+      (S.corr.on?'_corr':'')+'.segy');
+  }
+}
+
+/* ============================ INTERACTION ============================ */
+$('segMode').onclick=e=>{ const b=e.target.closest('button'); if(!b) return;
+  [...$('segMode').children].forEach(x=>x.classList.remove('on')); b.classList.add('on'); curMode=b.dataset.v; draw(); };
+$('tabs').onclick=e=>{ const b=e.target.closest('button'); if(!b) return;
+  [...$('tabs').children].forEach(x=>x.classList.remove('on')); b.classList.add('on');
+  document.querySelectorAll('.pane,.paneflex').forEach(p=>p.classList.remove('on'));
+  $(b.dataset.p).classList.add('on'); if(b.dataset.p==='pLoc') drawMap(); };
+
+/* --- file list --- */
+$('fileList').onclick=e=>{
+  const st=e.target.closest('button[data-s]');
+  if(st){ e.stopPropagation(); const f=S.files[+st.dataset.s];
+    f.srcType=isVib(f)?'imp':'vib'; f.pcache.clear(); f.pkey='';
+    restat(); renderFileList(); buildChips(); vibHint(); renderTrc(); fitIfNeeded(); draw(); return; }
+  const x=e.target.closest('button[data-x]');
+  if(x){ e.stopPropagation(); removeFile(+x.dataset.x); return; }
+  const li=e.target.closest('li[data-i]'); if(!li) return;
+  const fi=+li.dataset.i;
+  if(S.combine){ select(gIdx(fi,0),true); S.act=fi; renderFileList(); buildChips(); renderText(); renderBin(); }
+  else activate(fi,true);
+};
+$('combine').onchange=()=>{
+  S.combine=$('combine').checked;
+  const keep=S.act;
+  restat(); buildVis();
+  const [a,b]=dsBounds(); S.view.t0=a; S.view.t1=b;
+  $('t0').value=a.toFixed(0); $('t1').value=b.toFixed(0);
+  S.act=keep; S.sel=S.combine?gIdx(keep,0):0;
+  buildVis();
+  $('trFirst').value=1; $('trCount').value=Math.min(nVis(),S.combine?nVis():64); $('trStep').value=1;
+  $('trFirst').max=nVis(); $('trCount').max=nVis(); $('trcSel').max=nVis();
+  renderFileList(); buildChips(); renderTrc(); renderTable(); buildCoordSources(); vibHint(); draw(); drawMap();
+};
+$('btnAdd').onclick=()=>$('file').click();
+$('btnClear').onclick=clearFiles;
+
+/* --- vibroseis --- */
+function fitIfNeeded(){
+  const [a,b]=dsBounds();
+  if(S.view.t1>b+1e-6||S.view.t1<=a){ S.view.t0=a; S.view.t1=b;
+    $('t0').value=a.toFixed(0); $('t1').value=b.toFixed(0); }
+}
+function markPending(){
+  S.corr.dirty=true;
+  $('corrPend').style.display='block';
+}
+function onSweepChange(){
+  S.corr.par=readSw(); S.corr.dirty=false;
+  $('corrPend').style.display='none';
+  $('rsRow').style.display=S.corr.par.rsOn?'flex':'none';
+  clearProc(); clearAgc();
+  restat(); buildVis(); vibHint(); buildChips(); fitIfNeeded();
+  renderTrc(); renderTable(); draw();
+  if(!$('swPrev').classList.contains('hide')) drawSwPrev();
+}
+$('corrOn').onchange=()=>{
+  S.corr.on=$('corrOn').checked;
+  if(S.corr.on&&!dsFiles().some(isVib))
+    msg('No file on the axis is marked vibroseis — use the V/H badge in the file list to mark the sweep records.');
+  const [a0,b0]=dsBounds(); S.view.t0=a0; S.view.t1=b0;
+  $('t0').value=a0.toFixed(0); $('t1').value=b0.toFixed(0);
+  onSweepChange();
+};
+['swF1','swF2','swLen','swTapS','swTapE','swPh','swType','swOut','swLag','rsDt'].forEach(id=>{
+  $(id).onchange=markPending;
+});
+$('rsOn').onchange=()=>{ $('rsRow').style.display=$('rsOn').checked?'flex':'none'; markPending(); };
+$('btnRunCorr').onclick=()=>{
+  const [a0,b0]=[S.view.t0,S.view.t1];
+  onSweepChange();
+  const [a,b]=dsBounds();
+  if(b0>b||a0<a){ S.view.t0=a; S.view.t1=b; $('t0').value=a.toFixed(0); $('t1').value=b.toFixed(0); draw(); }
+};
+$('swSrc').onchange=()=>{
+  $('pilotRow').style.display=$('swSrc').value==='pilot'?'flex':'none';
+  $('pilotHint').style.display=($('swSrc').value==='pilot'&&S.pilot)?'block':'none';
+  if($('swSrc').value==='pilot'&&!S.pilot) msg('Pilot source selected — load the sweep .sgy with the button below.');
+  onSweepChange();
+};
+$('btnPilot').onclick=()=>$('pilotInp').click();
+$('pilotInp').onchange=async e=>{
+  const file=e.target.files[0]; if(!file) return;
+  const r=parseFile(await file.arrayBuffer(),file.name);
+  if(r.err){ fail('Pilot file: '+r.err); return; }
+  if(r.f.dead===r.f.ntr){ fail('Pilot file: every sample is zero — that cannot be the sweep.'); return; }
+  setPilot(r.f);
+  msg('Pilot sweep loaded from '+file.name+' — '+r.f.ns+' samples at '+(r.f.dt/1000)+' ms.');
+  e.target.value='';
+  onSweepChange();
+};
+$('btnSwHdr').onclick=sweepFromHeader;
+$('btnSwPrev').onclick=()=>{ $('swPrev').classList.remove('hide'); drawSwPrev(); };
+$('swPrevX').onclick=()=>$('swPrev').classList.add('hide');
+
+/* --- gathers --- */
+function gKeyOptions(){
+  const m=S.gath.mode;
+  if(m==='none'){ $('gKeyRow').style.display='none'; $('gBinRow').style.display='none'; return; }
+  $('gKeyRow').style.display=m==='off'?'none':'flex';
+  $('gBinRow').style.display=m==='off'?'flex':'none';
+  const list=GKEYS[m]||[];
+  $('gKey').innerHTML=list.map(k=>'<option value="'+k[0]+'">'+k[1]+'</option>').join('');
+  if(!list.some(k=>k[0]===S.gath.key)) S.gath.key=list[0][0];
+  $('gKey').value=S.gath.key;
+}
+function onGatherChange(refit){
+  if(refit){ S.gath.ens=0; }
+  buildVis();
+  $('trFirst').value=1; $('trStep').value=1; $('trCount').value=Math.max(1,nVis());
+  $('trFirst').max=nVis(); $('trCount').max=nVis(); $('trcSel').max=nVis();
+  buildChips(); renderTrc(); renderTable(); draw(); drawMap();
+}
+$('gMode').onchange=()=>{
+  S.gath.mode=$('gMode').value;
+  /* sorting is about the whole dataset: a receiver or offset gather is built from
+     traces across shot records, and with one shot per file a shot sort needs them all
+     on the axis too. Untick Combine afterwards to sort inside the active file only. */
+  if(S.gath.mode!=='none'&&!S.combine&&S.files.length>1){
+    S.combine=true; $('combine').checked=true; restat(); renderFileList();
+    msg('Combined all '+S.files.length+' files — sorting spans every file on the axis'+
+        (S.gath.mode==='shot'?'; step between shots with Next.'
+                             :', which is what a '+(S.gath.mode==='rcv'?'receiver':'common-offset')+' gather needs.'));
+  }
+  gKeyOptions(); onGatherChange(true);
+};
+$('gKey').onchange=()=>{ S.gath.key=$('gKey').value; onGatherChange(true); };
+$('gBin').onchange=()=>{ S.gath.bin=Math.max(0.01,+$('gBin').value); onGatherChange(true); };
+$('gEns').onchange=()=>{ S.gath.ens=+$('gEns').value; onGatherChange(false); };
+$('gPrev').onclick=()=>{ if(!S.ens.length) return; S.gath.ens=clamp(S.gath.ens-1,0,S.ens.length-1); onGatherChange(false); };
+$('gNext').onclick=()=>{ if(!S.ens.length) return; S.gath.ens=clamp(S.gath.ens+1,0,S.ens.length-1); onGatherChange(false); };
+
+$('gain').oninput=()=>{ const g=Math.pow(10,+$('gain').value);
+  $('gainV').textContent=g.toFixed(g<1?3:2)+'×'; $('gainTag').textContent=g.toFixed(g<1?3:2)+'×'; draw(); };
+$('clip').oninput=()=>{ $('clipV').textContent=(+$('clip').value).toFixed(1); draw(); };
+['norm','cmap','negFill','polarity','grid','agc','agcWin'].forEach(id=>$(id).onchange=()=>{clearAgc();draw();});
+['trFirst','trCount','trStep'].forEach(id=>$(id).oninput=draw);
+['t0','t1'].forEach(id=>$(id).onchange=()=>{ S.view.t0=+$('t0').value; S.view.t1=+$('t1').value; draw(); });
+$('btnAllTr').onclick=()=>{ $('trFirst').value=1; $('trStep').value=1; $('trCount').value=nVis(); draw(); };
+$('btnPrev').onclick=()=>{ const c=+$('trCount').value*(+$('trStep').value);
+  $('trFirst').value=clamp(+$('trFirst').value-c,1,nVis()); draw(); };
+$('btnNext').onclick=()=>{ const c=+$('trCount').value*(+$('trStep').value);
+  $('trFirst').value=clamp(+$('trFirst').value+c,1,nVis()); draw(); };
+$('btnFit').onclick=()=>fitTime();
+function fitTime(){ const [a,b]=dsBounds(); S.view.t0=a; S.view.t1=b;
+  $('t0').value=a.toFixed(0); $('t1').value=b.toFixed(0); draw(); }
+function zoom(f,anchor){
+  const c=anchor??(S.view.t0+S.view.t1)/2;
+  const a=(S.view.t0-c)*f+c, b=(S.view.t1-c)*f+c;
+  const [lo,hi]=dsBounds(), md=Math.min(...dsFiles().map(x=>x.dt))/1000;
+  S.view.t0=clamp(a,lo,hi); S.view.t1=clamp(b,lo,hi);
+  if(S.view.t1-S.view.t0<md*3) S.view.t1=S.view.t0+md*3;
+  $('t0').value=S.view.t0.toFixed(2); $('t1').value=S.view.t1.toFixed(2); draw();
+}
+$('btnZin').onclick=()=>zoom(0.7); $('btnZout').onclick=()=>zoom(1/0.7);
+$('encSel').onchange=()=>{ if(!has()) return;
+  for(const f of S.files){ f.enc=$('encSel').value==='auto'?detectText(f.u8):$('encSel').value; f.txt=decodeText(f.u8,f.enc); }
+  renderText(); };
+$('hexDump').onchange=renderTrc;
+$('trcSel').oninput=()=>{ const p=clamp((+$('trcSel').value|0)-1,0,nVis()-1); select(S.vis[p],false); };
+$('coordSrc').onchange=drawMap;
+$('crsSel').onchange=()=>{ $('utmBox').style.display=$('crsSel').value==='utm'?'flex':'none'; drawMap(); };
+$('utmZone').oninput=drawMap; $('utmHemi').onchange=drawMap;
+$('basemap').onchange=()=>{ tileFail=false; drawMap(); };
+
+cv.addEventListener('wheel',e=>{
+  if(!has()) return; e.preventDefault();
+  const r=cv.getBoundingClientRect(), h=r.height-M.t-M.b;
+  const tAt=S.view.t0+clamp((e.clientY-r.top-M.t)/h,0,1)*(S.view.t1-S.view.t0);
+  if(e.shiftKey){ const d=(S.view.t1-S.view.t0)*0.12*Math.sign(e.deltaY);
+    S.view.t0+=d; S.view.t1+=d; $('t0').value=S.view.t0.toFixed(2); $('t1').value=S.view.t1.toFixed(2); draw(); }
+  else zoom(e.deltaY>0?1.15:1/1.15,tAt);
+},{passive:false});
+cv.addEventListener('pointerdown',e=>{ if(!has()) return;
+  S.drag={y:e.clientY,t0:S.view.t0,t1:S.view.t1,moved:false}; cv.setPointerCapture(e.pointerId); });
+cv.addEventListener('pointerup',e=>{
+  if(S.drag&&!S.drag.moved&&LAY){
+    const r=cv.getBoundingClientRect(), k=Math.floor((e.clientX-r.left-M.l)/LAY.sp);
+    if(k>=0&&k<LAY.idx.length) select(LAY.idx[k],false);
+  }
+  S.drag=null;
+});
+cv.addEventListener('pointermove',e=>{
+  const r=cv.getBoundingClientRect();
+  if(S.drag){
+    const h=r.height-M.t-M.b, dt=(e.clientY-S.drag.y)/h*(S.drag.t1-S.drag.t0);
+    if(Math.abs(e.clientY-S.drag.y)>3) S.drag.moved=true;
+    S.view.t0=S.drag.t0-dt; S.view.t1=S.drag.t1-dt;
+    $('t0').value=S.view.t0.toFixed(2); $('t1').value=S.view.t1.toFixed(2); draw(); return;
+  }
+  if(!LAY||!has()) return;
+  const x=e.clientX-r.left, y=e.clientY-r.top;
+  const k=Math.floor((x-M.l)/LAY.sp);
+  if(k<0||k>=LAY.idx.length||y<M.t||y>r.height-M.b){ $('readout').textContent='—'; return; }
+  const rf=ref(LAY.idx[k]); if(!rf) return;
+  const f=rf.f, t=S.view.t0+(y-M.t)/(r.height-M.t-M.b)*(S.view.t1-S.view.t0);
+  const s=Math.round((t-eTstart(f))/(eDT(f)/1000));
+  const inRec=s>=0&&s<eNS(f);
+  const v=inRec?procTrace(f,rf.i)[s]:NaN;
+  $('readout').textContent=(S.combine?f.name+' · ':'')+'TR '+(rf.i+1)+' · '+t.toFixed(2)+' ms · '+(inRec?fmtNum(v,4):'—');
+  $('stF').textContent=f.name; $('stTr').textContent=rf.i+1;
+  $('stT').textContent=t.toFixed(2)+' ms'; $('stA').textContent=inRec?fmtNum(v,4):'—';
+});
+cv.addEventListener('pointerleave',()=>{$('readout').textContent='—';});
+
+/* ---------- file input / drop ---------- */
+$('btnOpen').onclick=$('btnOpen2').onclick=()=>$('file').click();
+$('file').onchange=e=>{ addFiles(e.target.files); e.target.value=''; };
+const dz=$('drop');
+['dragenter','dragover'].forEach(ev=>document.addEventListener(ev,e=>{e.preventDefault();dz.classList.add('over');dz.classList.remove('hide');}));
+['dragleave','drop'].forEach(ev=>document.addEventListener(ev,e=>{e.preventDefault();dz.classList.remove('over');if(has())dz.classList.add('hide');}));
+document.addEventListener('drop',e=>{ if(e.dataTransfer.files.length) addFiles(e.dataTransfer.files); });
+
+/* ---------- exports ---------- */
+function dl(blob,name){ const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download=name;
+  a.click(); setTimeout(()=>URL.revokeObjectURL(a.href),4000); }
+function stem(){ const f=hdrFile();
+  return S.combine&&S.files.length>1?'combined_'+S.files.length+'files':(f?f.name.replace(/\.[^.]+$/,''):'segy'); }
+$('btnSgyGather').onclick=()=>exportSegy(false);
+$('btnSgyAll').onclick=()=>exportSegy(true);
+$('btnPng').onclick=()=>{ if(!has()) return; cv.toBlob(b=>dl(b,stem()+'_wiggle.png')); };
+$('btnMapPng').onclick=()=>{ if(!has()) return; mc.toBlob(b=>dl(b,stem()+'_location.png')); };
+$('btnCsvHdr').onclick=()=>{
+  if(!has()) return;
+  const cols=TRC_FIELDS.filter(fd=>fd[0]<=231);
+  const ss=dsFiles().some(f=>f.smartsolo);
+  let out='file,trace_in_file,'+cols.map(fd=>'"'+fd[3]+' ['+fd[0]+']"').join(',')+(ss?',unit_lat,unit_lon,ref_lat,ref_lon':'')+'\n';
+  const N=nTot();
+  for(let g=0;g<N;g++){
+    const r=ref(g), f=r.f;
+    const row=['"'+f.name+'"',r.i+1].concat(cols.map(fd=>th(f,r.i,fd[0],fd[1],fd[2]==='i')));
+    if(ss) row.push(f.smartsolo?ssLL(f,r.i,207).toFixed(7):'',f.smartsolo?ssLL(f,r.i,213).toFixed(7):'',
+                    f.smartsolo?ssLL(f,r.i,219).toFixed(7):'',f.smartsolo?ssLL(f,r.i,225).toFixed(7):'');
+    out+=row.join(',')+'\n';
+  }
+  dl(new Blob([out],{type:'text/csv'}),stem()+'_headers.csv');
+};
+$('btnCsvTr').onclick=()=>{
+  if(!has()) return;
+  const r=ref(S.sel); if(!r) return;
+  const f=r.f, d=procTrace(f,r.i); let out='time_ms,amplitude\n';
+  for(let k=0;k<d.length;k++) out+=(eTstart(f)+k*eDT(f)/1000).toFixed(4)+','+d[k]+'\n';
+  dl(new Blob([out],{type:'text/csv'}),f.name.replace(/\.[^.]+$/,'')+'_trace'+(r.i+1)+(corrOn(f)?'_corr':'')+'.csv');
+};
+
+/* ---------- demo gather ---------- */
+function demoBuffer(shot,ntr,ns,dt){
+  const bps=4;
+  const buf=new ArrayBuffer(3600+ntr*(240+ns*bps)), dv=new DataView(buf), u8=new Uint8Array(buf);
+  const lines=['C01 SYNTHETIC DEMO GATHER '+shot+' — SEG-Y WIGGLE VIEWER V2.2',
+    'C02 '+ntr+' TRACES, 2 M GROUP INTERVAL, 1 MS SAMPLE RATE, '+ns+' MS',
+    'C03 DIRECT WAVE 450 M/S + REFRACTOR 1800 M/S + TWO REFLECTORS',
+    'C04 COORDINATES ARE UTM ZONE 36N (WGS 84), METRES','C05 THIS RECORD IS SYNTHETIC — NOT FIELD DATA'];
+  for(let i=0;i<40;i++){ const s=(lines[i]||'').padEnd(80,' ');
+    for(let c=0;c<80;c++) u8[i*80+c]=asc2e(s[c]); }
+  dv.setInt32(3200+0,9999); dv.setInt32(3200+4,1); dv.setInt16(3200+12,ntr);
+  dv.setUint16(3200+16,dt); dv.setUint16(3200+18,dt); dv.setUint16(3200+20,ns); dv.setUint16(3200+22,ns);
+  dv.setInt16(3200+24,5); dv.setInt16(3200+28,5); dv.setInt16(3200+54,1);
+  dv.setUint16(3200+300,0x0100); dv.setInt16(3200+302,1);
+  const sx=325800+(shot-1)*24, sy=3266400;
+  for(let t=0;t<ntr;t++){
+    const o=3600+t*(240+ns*bps), gxv=325830+t*2, gyv=sy+2;
+    dv.setInt32(o+0,t+1); dv.setInt32(o+4,t+1); dv.setInt32(o+8,100+shot); dv.setInt32(o+12,t+1);
+    dv.setInt32(o+16,shot); dv.setInt32(o+20,t+1); dv.setInt16(o+28,1);
+    const off=Math.hypot(gxv-sx,gyv-sy);
+    dv.setInt32(o+36,Math.round(off)); dv.setInt16(o+68,1); dv.setInt16(o+70,1);
+    dv.setInt32(o+72,sx); dv.setInt32(o+76,sy); dv.setInt32(o+80,gxv); dv.setInt32(o+84,gyv);
+    dv.setInt16(o+88,1); dv.setUint16(o+114,ns); dv.setUint16(o+116,dt);
+    dv.setInt16(o+156,2026); dv.setInt16(o+158,196); dv.setInt16(o+160,9); dv.setInt16(o+162,30+shot); dv.setInt16(o+164,0);
+    dv.setInt16(o+166,4); dv.setInt32(o+180,10000+t*100); dv.setInt32(o+188,1); dv.setInt32(o+192,t+1);
+    const ric=(t_,f)=>{const a=Math.PI*f*t_/1000;return (1-2*a*a)*Math.exp(-a*a);};
+    for(let k=0;k<ns;k++){
+      const tt=k, r=off||1; let v=0;
+      v+=ric(tt-(r/450*1000),42)*70/Math.pow(r,.6);            // direct / ground roll
+      v+=ric(tt-(r/1800*1000+18),55)*26/Math.pow(r,.5);        // refractor
+      v+=ric(tt-Math.sqrt(160*160+(r/1600*1000)*(r/1600*1000)),38)*18;  // reflector 1
+      v+=ric(tt-Math.sqrt(420*420+(r/2400*1000)*(r/2400*1000)),30)*11;  // reflector 2
+      v+=(Math.random()-.5)*1.1;
+      dv.setFloat32(o+240+k*4,v);
+    }
+  }
+  return buf;
+}
+function demo(){
+  const before=S.files.length;
+  for(let s=1;s<=3;s++) addBuffer(demoBuffer(s,24,1000,1000),'demo_shot'+s+'.segy');
+  activate(before,true);
+  msg('Three synthetic demo shots loaded — tick Combine to see all 72 traces on one axis.');
+}
+$('btnDemo').onclick=$('btnDemo2').onclick=demo;
+
+/* ---------- boot ---------- */
+window.addEventListener('resize',()=>{draw();});
+$('gain').dispatchEvent(new Event('input'));
+gKeyOptions(); renderEns(); renderFileList();
+draw();
+if(typeof module!=='undefined'&&module.exports)
+  module.exports={loadBuffer,addBuffer,activate,S,utm2ll,ibmToFloat,dms2dd,
+    sweep,klauder,correlate,fft,buildVis,writeSegy,offsetOf,eNS};
+
+</script>
+</body>
+</html>
