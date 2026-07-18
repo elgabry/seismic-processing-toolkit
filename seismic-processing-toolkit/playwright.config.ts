@@ -5,6 +5,7 @@ const port = production ? 4173 : 4174;
 
 export default defineConfig({
   testDir: "./tests/e2e",
+  testIgnore: ["**/local-release*.spec.ts"],
   timeout: 30_000,
   expect: { timeout: 8_000 },
   fullyParallel: true,

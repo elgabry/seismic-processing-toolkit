@@ -10,7 +10,9 @@ export class CsvSweepReader implements SweepFileReader {
     if (signal?.aborted) throw signal.reason ?? new DOMException("Aborted", "AbortError");
     const lines = (await file.text()).split(/\r?\n/); const amplitudes: number[] = []; const times: number[] = [];
     for (const line of lines) {
-      const values = line.trim().split(/[\s,;\t]+/).map(Number).filter(Number.isFinite);
+      const trimmed = line.trim();
+      if (trimmed.length === 0) continue;
+      const values = trimmed.split(/[\s,;\t]+/).map(Number).filter(Number.isFinite);
       if (values.length === 1) amplitudes.push(values[0] ?? 0);
       else if (values.length >= 2) { times.push(values[0] ?? 0); amplitudes.push(values[1] ?? 0); }
     }
