@@ -45,3 +45,14 @@
 | PNG options dialog | target/dimension/background controls | `PngExportDialog` | PNG unit + E2E smoke | implemented; comparison/difference remain future work |
 | Production-preview E2E | Vite preview web server | Playwright config | CI E2E job | implemented |
 | Cross-browser smoke | Chromium/Firefox/WebKit projects | Playwright config | `@smoke` | implemented; structural rather than pixel-equivalence assertions |
+
+## Publication section implementation matrix
+
+| Item | Target module | Tests | Completion / limitation |
+|---|---|---|---|
+| Serializable section options and reference preset | `visualization/section/section-render-model.ts` | unit | implemented; render options are display-only |
+| Symmetric grayscale mapping and bounded statistics | `section-color-mapper.ts` | unit | implemented; 4096-bin deterministic histogram |
+| Portrait layout, time/receiver axes, title and frame | `section-layout.ts`, `section-axis-renderer.ts` | unit | implemented; browser fonts may vary slightly |
+| Density raster and vertical antialiasing | `seismic-amplitude-rasterizer.ts` | unit/browser PNG | implemented; no field-data visual baseline is committed |
+| Publication PNG adapter | `export/png/publication-section-export.ts` | browser PNG | implemented; fresh canvas, never a screenshot |
+| Export dialog and preview | `ui/dialogs/png-export-dialog.ts` | Chromium workflow | implemented; current modular UI has no separate processing-graph result selector |
