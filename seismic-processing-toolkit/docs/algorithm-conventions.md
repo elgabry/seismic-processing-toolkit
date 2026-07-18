@@ -2,6 +2,7 @@
 
 - DSP sample intervals are seconds. SEG-Y I/O values stay raw microseconds/milliseconds until conversion at the boundary.
 - Correlation is `r_xs[l] = Σ x[n+l]s[n]`. Full index `k` has lag `k-(M-1)`. `same` returns lags `0..N-1`; a delayed sweep peaks at its delay sample. Correlation equals convolution with the time-reversed sweep.
+- Frequency Domain Sweep Deconvolution (FDSD) uses the stabilized complex inverse `R(f) = X(f)S*(f) / (|S(f)|² + ε)`, where `ε` is the selected water-level fraction times the maximum pilot spectral power. It preserves the input trace length and starts at time zero. It is not cross-correlation and does not intentionally create a Klauder wavelet. Optional low/high cuts and a cosine passband taper are applied symmetrically to positive and negative frequencies.
 - FFT forward transforms are unnormalised and inverse transforms divide by N.
 - Convolution full output uses ordinary causal index `k=i+j`; same is kernel-centred, valid contains only complete kernel overlap.
 - Positive SEG-Y coordinate/elevation scalar multiplies; negative divides by magnitude; zero is one. Raw values are never overwritten by scaled values.
