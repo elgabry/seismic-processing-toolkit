@@ -36,7 +36,8 @@ class SmartSoloMappedHeaderSource implements RandomAccessSource {
   }
 }
 
-function selectedTraceIds(reader: SmartSolo8058Reader, options: NormalizedSmartSoloConversionOptions): Uint32Array {
+/** Shared by the synchronous and worker conversion paths so trace-class filtering stays identical. */
+export function selectedSmartSoloTraceIds(reader: SmartSolo8058Reader, options: NormalizedSmartSoloConversionOptions): Uint32Array {
   const ids: number[] = [];
   for (let traceId = 0; traceId < reader.traceCount; traceId += 1) {
     const traceClass = reader.index.traceAt(traceId).traceClass;
@@ -47,7 +48,8 @@ function selectedTraceIds(reader: SmartSolo8058Reader, options: NormalizedSmartS
   return new Uint32Array(ids);
 }
 
-function buildSegyIndex(reader: SmartSolo8058Reader, traceIds: Uint32Array): SegyTraceIndex {
+/** Builds the virtual SEG-Y index used by both writer orchestration paths. */
+export function buildSmartSoloSegyIndex(reader: SmartSolo8058Reader, traceIds: Uint32Array): SegyTraceIndex {
   const count = traceIds.length; const headers = new Float64Array(count); const samples = new Float64Array(count); const sampleCounts = new Uint32Array(count); const intervals = new Uint32Array(count);
   const fieldRecords = new Int32Array(count); const traceNumbers = new Int32Array(count); const offsets = new Int32Array(count); const identification = new Int16Array(count); const valid = new Uint8Array(count);
   for (let outputTraceId = 0; outputTraceId < count; outputTraceId += 1) {
@@ -67,18 +69,18 @@ export class SmartSolo8058Converter {
   }
 
   public static estimate(reader: SmartSolo8058Reader, options: SmartSoloConversionOptions = {}): SmartSoloConversionSummary {
-    const normalized = normalizeSmartSoloConversionOptions(options); const codec = defaultSampleCodecRegistry.get(normalized.sampleFormatCode); const traceIds = selectedTraceIds(reader, normalized);
+    const normalized = normalizeSmartSoloConversionOptions(options); const codec = defaultSampleCodecRegistry.get(normalized.sampleFormatCode); const traceIds = selectedSmartSoloTraceIds(reader, normalized);
     let sampleBytes = 0;
     for (let outputTraceId = 0; outputTraceId < traceIds.length; outputTraceId += 1) sampleBytes += (reader.index.sampleCounts[traceIds[outputTraceId] ?? 0] ?? 0) * codec.bytesPerSample;
     return { traceCount: traceIds.length, estimatedBytes: 3600 + traceIds.length * 240 + sampleBytes, diagnostics: reader.diagnostics };
   }
 
   public static async convert(reader: SmartSolo8058Reader, sink: OutputSink, options: SmartSoloConversionOptions = {}): Promise<SmartSoloConversionSummary> {
-    const normalized = normalizeSmartSoloConversionOptions(options); const traceIds = selectedTraceIds(reader, normalized);
+    const normalized = normalizeSmartSoloConversionOptions(options); const traceIds = selectedSmartSoloTraceIds(reader, normalized);
     if (traceIds.length === 0) throw new SmartSoloMappingError("The conversion options excluded every SmartSolo trace.", smartSoloDiagnostic("error", "SMARTSOLO_NO_SELECTED_TRACES", "Include at least one trace class before converting.", false, reader.source.name));
     const diagnostics: Diagnostic[] = [...reader.diagnostics];
     const source = new SmartSoloMappedHeaderSource(reader, traceIds, normalized, diagnostics);
-    const dataset = new SegyDataset(source, createSmartSoloTextualHeaders(reader, normalized), createSmartSoloBinaryHeader(reader, normalized), buildSegyIndex(reader, traceIds), diagnostics, defaultSampleCodecRegistry.get(5), false, 0);
+    const dataset = new SegyDataset(source, createSmartSoloTextualHeaders(reader, normalized), createSmartSoloBinaryHeader(reader, normalized), buildSmartSoloSegyIndex(reader, traceIds), diagnostics, defaultSampleCodecRegistry.get(5), false, 0);
     const history = normalized.processingHistory ? [
       `SMARTSOLO 8058 CONVERSION INPUT=${outputName(reader.source.name)} SIZE=${reader.source.size}`,
       `SMARTSOLO REV=${reader.headers.revision} FORMAT=8058 MAP=1 OUTPUT_REV=${normalized.outputRevision} SAMPLE_FORMAT=${normalized.sampleFormatCode}`,
