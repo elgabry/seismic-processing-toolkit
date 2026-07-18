@@ -57,3 +57,70 @@ jobs:
             seismic-processing-toolkit/test-results/
           if-no-files-found: ignore
           retention-days: 7
+
+  local-release-smoke:
+    needs: verification
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: seismic-processing-toolkit/package-lock.json
+      - run: npm ci
+        working-directory: seismic-processing-toolkit
+      - run: npm run build
+        working-directory: seismic-processing-toolkit
+      - run: npm run package:local
+        working-directory: seismic-processing-toolkit
+      - run: node scripts/verify-local-release.mjs
+        working-directory: seismic-processing-toolkit
+      - id: metadata
+        if: matrix.os == 'ubuntu-latest'
+        shell: bash
+        working-directory: seismic-processing-toolkit
+        run: |
+          echo "version=$(node -p \"require('./package.json').version\")" >> "$GITHUB_OUTPUT"
+          echo "sha=${GITHUB_SHA::12}" >> "$GITHUB_OUTPUT"
+      - name: Upload portable local release
+        if: matrix.os == 'ubuntu-latest'
+        uses: actions/upload-artifact@v4
+        with:
+          name: seismic-processing-toolkit-local-v${{ steps.metadata.outputs.version }}-${{ steps.metadata.outputs.sha }}-universal
+          path: seismic-processing-toolkit/local-release/seismic-processing-toolkit/
+          if-no-files-found: error
+          retention-days: 14
+
+  local-release-e2e:
+    needs: verification
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: seismic-processing-toolkit/package-lock.json
+      - run: npm ci
+        working-directory: seismic-processing-toolkit
+      - run: npx playwright install --with-deps chromium
+        working-directory: seismic-processing-toolkit
+      - run: npm run test:e2e:local-release
+        working-directory: seismic-processing-toolkit
+      - name: Upload portable release Playwright diagnostics
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: local-release-playwright-artifacts
+          path: |
+            seismic-processing-toolkit/playwright-report/
+            seismic-processing-toolkit/test-results/
+          if-no-files-found: ignore
+          retention-days: 7
