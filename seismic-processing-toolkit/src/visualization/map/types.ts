@@ -9,8 +9,12 @@ export interface MapRenderOptions {
   readonly pointRadius?: number;
   readonly sourcesVisible?: boolean;
   readonly receiversVisible?: boolean;
+  readonly cmpsVisible?: boolean;
   readonly selectedTraceIds?: ReadonlySet<number>;
   readonly findingTraceIds?: ReadonlySet<number>;
+  readonly findingSeverityTraceIds?: ReadonlySet<number>;
+  readonly colorBy?: "role" | "offset" | "sourceId" | "receiverId" | "cmpId" | "qc";
   readonly background?: string;
 }
 export interface MapHit { readonly traceId: number; readonly role: GeometryRole; readonly distancePixels: number; }
+export interface ScreenRect { readonly start: ScreenPoint; readonly end: ScreenPoint; }

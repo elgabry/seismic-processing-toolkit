@@ -18,3 +18,30 @@
 | Trace-header CSV | `btnCsvHdr` | `export/csv/trace-header-csv-exporter.ts` | implemented | CSV encoder tests | raw and scaled coordinates can both be emitted |
 | Geometry CSV | no direct legacy equivalent | `export/csv/geometry-csv-exporter.ts` | implemented | CSV encoder tests | includes unit/scalar and QC flag columns |
 | Gather CSV | gather UI state | `export/csv/gather-csv-exporter.ts` | implemented | CSV encoder tests | exports trace order only, never duplicate samples |
+
+## Phase 3 implementation matrix
+
+| Item | Current state | Target module | Tests | Completion / remaining limitation |
+|---|---|---|---|---|
+| Playwright infrastructure | new local dependency/config | `playwright.config.ts` | production E2E CI | implemented; engines install in CI |
+| SEG-Y browser fixture loading | synthetic upload payload | `tests/e2e/fixtures/seismic-fixtures.ts` | shell/viewer specs | implemented |
+| SmartSolo browser fixture loading | synthetic 8058 payload | `tests/e2e/fixtures/seismic-fixtures.ts` | conversion spec | implemented for rev 1.0 fixture only |
+| Download testing | CSV/PNG parser helpers | `tests/e2e/fixtures/downloads.ts` | smoke spec | implemented for header CSV and PNG |
+| Console-error monitoring | page/console collector | `browser-errors.ts` | all E2E specs | implemented |
+| Network privacy checks | request recorder | `privacy.spec.ts` | Chromium primary | implemented; static GETs only allowed |
+| SmartSolo worker detection | module worker `open` | `workers/smartsolo.worker.ts` | protocol/unit + E2E | implemented |
+| SmartSolo worker indexing | bounded worker `open` | `workers/smartsolo.worker.ts` | E2E/build | implemented |
+| SmartSolo worker decoding | pull batch request | `workers/smartsolo.worker.ts` | protocol/unit + E2E | implemented |
+| SmartSolo conversion cancellation | shared Abort/job cancel | worker client/dialog | protocol + indexing-cancel browser test | implemented; deterministic mid-conversion browser race fixture remains future work |
+| SmartSolo conversion progress | phase messages | worker protocol/dialog | browser workflow | implemented |
+| Map fit/reset | toolbar controls | `GeometryMapPanel` | transform/unit + E2E | implemented |
+| Map layer controls | source/receiver/CMP toggles | `GeometryMapPanel` | browser map spec | implemented |
+| Box zoom / multi-selection | gesture modes + grid query | map transforms/index/panel | unit primitives | implemented; high-density visual stress remains future work |
+| Hover inspection | local hover text | `GeometryMapPanel` | browser map spec | implemented |
+| Color-by-header / legend | role/offset/ID scale | map renderer/panel | unit render prep | implemented; custom arbitrary headers remain future work |
+| Geometry CSV dialog | streaming service controls | `CsvExportDialog` | service/unit + E2E smoke | implemented |
+| Gather CSV dialog | gather-index option | `CsvExportDialog` | service/unit | implemented |
+| Long/wide trace CSV options | dialog layout selector | `CsvExportDialog` | exporter limits | implemented; wide rejects unsafe scope |
+| PNG options dialog | target/dimension/background controls | `PngExportDialog` | PNG unit + E2E smoke | implemented; comparison/difference remain future work |
+| Production-preview E2E | Vite preview web server | Playwright config | CI E2E job | implemented |
+| Cross-browser smoke | Chromium/Firefox/WebKit projects | Playwright config | `@smoke` | implemented; structural rather than pixel-equivalence assertions |

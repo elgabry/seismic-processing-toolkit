@@ -21,5 +21,12 @@ export class MapSpatialIndex {
     }
     return best;
   }
+  /** Returns only grid candidates intersecting the world box; callers never need a whole-table pointer scan. */
+  public tracesInBox(bounds: { readonly minimumX: number; readonly maximumX: number; readonly minimumY: number; readonly maximumY: number }): Uint32Array {
+    const ids = new Set<number>();
+    const minCellX = Math.floor(bounds.minimumX / this.cellSize); const maxCellX = Math.floor(bounds.maximumX / this.cellSize); const minCellY = Math.floor(bounds.minimumY / this.cellSize); const maxCellY = Math.floor(bounds.maximumY / this.cellSize);
+    for (let y = minCellY; y <= maxCellY; y += 1) for (let x = minCellX; x <= maxCellX; x += 1) for (const point of this.cells.get(`${x}:${y}`) ?? []) if (point.x >= bounds.minimumX && point.x <= bounds.maximumX && point.y >= bounds.minimumY && point.y <= bounds.maximumY) ids.add(point.traceId);
+    return Uint32Array.from(ids).sort();
+  }
   private key(x: number, y: number): string { return `${Math.floor(x / this.cellSize)}:${Math.floor(y / this.cellSize)}`; }
 }
