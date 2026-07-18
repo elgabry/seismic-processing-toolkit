@@ -115,7 +115,10 @@ export function createSmartSoloTextualHeaders(reader: SmartSolo8058Reader, optio
   if (!options.preserveRawMetadata) return [primary];
   let hex = "";
   for (const value of reader.headers.rawPrefix) hex += value.toString(16).padStart(2, "0").toUpperCase();
-  const chunkLength = 64;
+  // The textual-header card prefix consumes 29 characters; keep the complete
+  // hex payload within SEG-Y's fixed 80-character card instead of relying on
+  // TextualHeader.withCards() to truncate it.
+  const chunkLength = 48;
   const headers: TextualHeader[] = [primary];
   for (let offset = 0, part = 1; offset < hex.length; offset += chunkLength * 40, part += 1) {
     const cards: string[] = [];
