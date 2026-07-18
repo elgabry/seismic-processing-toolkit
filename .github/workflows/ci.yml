@@ -27,3 +27,33 @@ jobs:
         working-directory: seismic-processing-toolkit
       - run: npm run benchmark
         working-directory: seismic-processing-toolkit
+
+  e2e:
+    needs: verification
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: seismic-processing-toolkit/package-lock.json
+      - run: npm ci
+        working-directory: seismic-processing-toolkit
+      - run: npx playwright install --with-deps chromium firefox webkit
+        working-directory: seismic-processing-toolkit
+      - run: npm run build
+        working-directory: seismic-processing-toolkit
+      - run: npm run test:e2e:prod
+        working-directory: seismic-processing-toolkit
+      - name: Upload Playwright diagnostics
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-artifacts
+          path: |
+            seismic-processing-toolkit/playwright-report/
+            seismic-processing-toolkit/test-results/
+          if-no-files-found: ignore
+          retention-days: 7
