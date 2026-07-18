@@ -85,9 +85,9 @@ jobs:
         if: matrix.os == 'ubuntu-latest'
         shell: bash
         working-directory: seismic-processing-toolkit
-        run: |
-          echo "version=$(node -p \"require('./package.json').version\")" >> "$GITHUB_OUTPUT"
-          echo "sha=${GITHUB_SHA::12}" >> "$GITHUB_OUTPUT"
+        run: >-
+          node -e 'const fs=require("node:fs"); const version=require("./package.json").version;
+          fs.appendFileSync(process.env.GITHUB_OUTPUT, `version=${version}\nsha=${process.env.GITHUB_SHA.slice(0, 12)}\n`);'
       - name: Upload portable local release
         if: matrix.os == 'ubuntu-latest'
         uses: actions/upload-artifact@v4
