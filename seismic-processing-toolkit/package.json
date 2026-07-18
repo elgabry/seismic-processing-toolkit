@@ -4,7 +4,8 @@
   "private": true,
   "type": "module",
   "engines": {
-    "node": ">=22.12.0"
+    "node": ">=22.12.0",
+    "npm": ">=10"
   },
   "scripts": {
     "dev": "vite",
@@ -13,11 +14,18 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "lint": "eslint . --max-warnings=0",
-    "benchmark": "vitest bench",
+    "benchmark": "vitest bench --run",
     "test:e2e": "playwright test",
     "test:e2e:headed": "playwright test --headed",
     "test:e2e:ui": "playwright test --ui",
-    "test:e2e:prod": "PLAYWRIGHT_PRODUCTION=1 playwright test"
+    "test:e2e:prod": "node scripts/run-e2e.mjs --production",
+    "doctor": "node scripts/doctor.mjs",
+    "local": "node scripts/run-local.mjs",
+    "local:no-open": "node scripts/run-local.mjs --no-open",
+    "local:serve": "node scripts/serve-local.mjs --root dist --open",
+    "package:local": "node scripts/package-local-release.mjs",
+    "test:local-server": "vitest run tests/local",
+    "test:e2e:local-release": "node scripts/run-local-release-e2e.mjs"
   },
   "devDependencies": {
     "@eslint/js": "^9.7.0",
