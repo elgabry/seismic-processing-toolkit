@@ -7,7 +7,8 @@ export type PngDraw = (context: PngContext, width: number, height: number) => vo
 export function validatePngDimensions(options: PngExportOptions): void {
   const maximumPixels = options.maximumPixels ?? 64_000_000;
   if (!Number.isInteger(options.width) || !Number.isInteger(options.height) || options.width < 1 || options.height < 1) throw new PngExportError("PNG dimensions must be positive integers.", { severity: "error", code: "PNG_INVALID_DIMENSIONS", message: "Specify a positive pixel width and height.", recoverable: false });
-  if (!Number.isSafeInteger(options.width * options.height) || options.width * options.height > maximumPixels) throw new ExportSizeLimitError("Requested PNG dimensions exceed the safe canvas limit.", { severity: "error", code: "PNG_PIXEL_LIMIT", message: `Requested ${options.width}×${options.height} pixels exceeds the ${maximumPixels}-pixel limit.`, recoverable: false });
+  const pixels = options.width * options.height;
+  if (!Number.isSafeInteger(pixels) || pixels > maximumPixels) { const requestedMiB = pixels * 4 / 1024 / 1024; const maximumMiB = maximumPixels * 4 / 1024 / 1024; throw new ExportSizeLimitError("Requested PNG dimensions exceed the safe canvas limit.", { severity: "error", code: "PNG_PIXEL_LIMIT", message: `Requested image requires approximately ${requestedMiB.toFixed(1)} MiB of RGBA pixel memory, exceeding the configured ${maximumMiB.toFixed(1)} MiB export limit.`, recoverable: false }); }
 }
 
 /** Renders a new requested-size canvas, so export never mutates an active viewport or relies on a screenshot. */
